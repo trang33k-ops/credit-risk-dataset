@@ -1,0 +1,562 @@
+============================================================
+PERSON 2 — MODEL DEVELOPMENT & OPTIMIZATION
+CREDIT RISK ANALYTICS PROJECT
+============================================================
+
+I. ROLE OF PERSON 2
+
+Person 2 chịu trách nhiệm xây dựng toàn bộ hệ thống Machine Learning cho dự án Credit Risk Analytics. Đây là phần trung tâm AI của hệ thống, nơi dữ liệu đã được xử lý từ Person 1 được chuyển thành mô hình dự đoán rủi ro tín dụng thực tế.
+
+Các nhiệm vụ chính:
+- Train nhiều mô hình Machine Learning
+- So sánh hiệu suất các thuật toán
+- Hyperparameter Tuning
+- Threshold Optimization
+- Model Evaluation
+- Professional Visualization
+- Export model cho dashboard
+- Chuẩn bị backend prediction logic cho Person 3 tích hợp dashboard
+
+============================================================
+II. INPUT DATA
+============================================================
+
+Nguồn dữ liệu:
+data/data_feature.csv
+
+Dữ liệu được lấy từ Person 1 sau:
+- Data Cleaning
+- Feature Engineering
+- Risk Index
+- SQL Processing
+- PCA
+
+Target Variable:
+loan_status
+
+Ý nghĩa:
+- 0 = Non-default
+- 1 = Default
+
+============================================================
+III. DATASET OVERVIEW
+============================================================
+
+Sau quá trình preprocessing từ Person 1, tập dữ liệu cuối cùng có:
+
+- Total Rows: 32,581
+- Total Features: 48
+- Default Rate: 21.82%
+- Train Rows: 26,064
+- Test Rows: 6,517
+
+Ý nghĩa:
+- Dataset có tỷ lệ mất cân bằng tương đối cao.
+- Chỉ khoảng 21.82% khách hàng bị default.
+- Đây là đặc trưng phổ biến của bài toán Credit Risk thực tế.
+
+============================================================
+IV. TRAIN / TEST SPLIT
+============================================================
+
+Mục tiêu:
+- Chia dữ liệu thành train set và test set.
+
+Phương pháp:
+- 80% dữ liệu dùng để train model
+- 20% dữ liệu dùng để test model
+- stratify=y giúp giữ tỷ lệ default ổn định giữa train/test
+
+Ý nghĩa:
+- Giúp đánh giá model khách quan hơn
+- Tránh model học lệch dữ liệu
+
+============================================================
+V. BASELINE MODEL — LOGISTIC REGRESSION
+============================================================
+
+Thuật toán:
+- Logistic Regression
+
+Mục tiêu:
+- Làm baseline model để so sánh.
+
+Cấu hình:
+- class_weight = balanced
+- max_iter = 1000
+
+Kết quả:
+- Accuracy : 0.7342
+- Precision: 0.4367
+- Recall   : 0.7525
+- F1-score : 0.5527
+- ROC-AUC  : 0.8150
+
+Ý nghĩa:
+- Logistic Regression là mô hình kinh điển trong Credit Scoring.
+- Dễ giải thích.
+- Train nhanh.
+- Dùng làm chuẩn để so sánh với các model mạnh hơn.
+
+============================================================
+VI. DECISION TREE
+============================================================
+
+Thuật toán:
+- DecisionTreeClassifier
+
+Mục tiêu:
+- Tạo logic phân loại dạng cây quyết định.
+
+Cấu hình:
+- max_depth = 8
+- class_weight = balanced
+
+Kết quả:
+- Accuracy : 0.8989
+- Precision: 0.7932
+- Recall   : 0.7257
+- F1-score : 0.7580
+- ROC-AUC  : 0.9008
+
+Ý nghĩa:
+- Dễ giải thích nghiệp vụ.
+- Có thể diễn giải logic quyết định tín dụng rõ ràng.
+
+Ví dụ:
+Nếu:
+- Debt-to-Income Ratio cao
+- Loan Grade thấp
+- Past Delinquencies lớn
+
+=> Risk cao
+
+============================================================
+VII. RANDOM FOREST
+============================================================
+
+Thuật toán:
+- RandomForestClassifier
+
+Mục tiêu:
+- Giảm overfitting
+- Tăng độ ổn định model
+- Tăng hiệu suất phân loại
+
+Cấu hình:
+- n_estimators = 200
+- max_depth = 12
+- class_weight = balanced
+- n_jobs = -1
+
+Kết quả:
+- Accuracy : 0.9092
+- Precision: 0.8352
+- Recall   : 0.7271
+- F1-score : 0.7774
+- ROC-AUC  : 0.9199
+
+Ý nghĩa:
+- Đây là model mạnh nhất trong nhóm baseline models.
+- Ensemble Learning giúp tăng hiệu quả dự đoán.
+- Phù hợp với dữ liệu tài chính phi tuyến.
+
+============================================================
+VIII. XGBOOST MODEL
+============================================================
+
+Thuật toán:
+- XGBoost Classifier
+
+Mục tiêu:
+- Bổ sung boosting model nâng cao để so sánh với Random Forest.
+
+Cấu hình:
+- n_estimators = 300
+- max_depth = 6
+- learning_rate = 0.05
+- subsample = 0.8
+- colsample_bytree = 0.8
+- scale_pos_weight = imbalance_ratio
+
+Ý nghĩa:
+- XGBoost là boosting algorithm rất phổ biến trong Credit Scoring và Financial AI.
+- Có khả năng học dần từ lỗi của các cây trước đó.
+- Phù hợp với dữ liệu tabular trong lĩnh vực tài chính.
+
+Lưu ý:
+- Nếu môi trường chưa cài xgboost, hệ thống vẫn chạy ổn định với Random Forest.
+
+============================================================
+IX. MODEL COMPARISON
+============================================================
+
+Các mô hình Machine Learning được sử dụng:
+
+1. Logistic Regression
+- Accuracy : 0.7342
+- Precision: 0.4367
+- Recall   : 0.7525
+- F1-score : 0.5527
+- ROC-AUC  : 0.8150
+
+2. Decision Tree
+- Accuracy : 0.8989
+- Precision: 0.7932
+- Recall   : 0.7257
+- F1-score : 0.7580
+- ROC-AUC  : 0.9008
+
+3. Random Forest
+- Accuracy : 0.9092
+- Precision: 0.8352
+- Recall   : 0.7271
+- F1-score : 0.7774
+- ROC-AUC  : 0.9199
+
+4. XGBoost
+- Được sử dụng như advanced ensemble model.
+- Hiệu suất được đánh giá và so sánh trực tiếp với Random Forest.
+
+============================================================
+X. MODEL COMPARISON INTERPRETATION
+============================================================
+
+Logistic Regression:
+- Recall khá cao.
+- Tuy nhiên Precision thấp.
+- Model tạo nhiều False Positive.
+
+Decision Tree:
+- Dễ giải thích.
+- Hiệu suất tốt hơn Logistic Regression.
+- Tuy nhiên vẫn có nguy cơ overfitting.
+
+Random Forest:
+- Cho kết quả tốt nhất trong baseline models.
+- ROC-AUC cao nhất.
+- Precision và F1-score vượt trội.
+- Khả năng tổng quát hóa tốt hơn.
+
+XGBoost:
+- Là boosting model nâng cao.
+- Giúp tăng chiều sâu Machine Learning của dự án.
+- Được dùng để so sánh với Random Forest theo hướng Financial AI hiện đại.
+
+Kết luận:
+- Random Forest được chọn làm final production model do hiệu suất ổn định và ROC-AUC rất cao.
+
+============================================================
+XI. HYPERPARAMETER TUNING
+============================================================
+
+Phương pháp:
+- GridSearchCV
+
+Cross Validation:
+- 5-fold Cross Validation
+
+Parameter Search:
+- 81 parameter combinations
+- Tổng cộng 405 lần fitting model
+
+Best Parameters:
+{
+    'max_depth': 16,
+    'min_samples_leaf': 2,
+    'min_samples_split': 10,
+    'n_estimators': 300
+}
+
+Best CV ROC-AUC:
+- 0.9195
+
+Ý nghĩa:
+- Tăng khả năng tổng quát hóa.
+- Giảm overfitting.
+- Tối ưu hiệu suất model.
+- Mô phỏng quy trình Machine Learning chuyên nghiệp.
+
+============================================================
+XII. THRESHOLD OPTIMIZATION
+============================================================
+
+Vấn đề:
+- Threshold mặc định thường là 0.50.
+- Tuy nhiên trong Credit Risk, bỏ sót khách hàng xấu rất nguy hiểm.
+
+Giải pháp:
+- Test threshold từ 0.10 → 0.90
+- Chọn threshold tốt nhất theo:
+  + F1-score
+  + Recall
+
+Best Threshold:
+- 0.53
+
+Final Metrics After Threshold Optimization:
+- Accuracy : 0.9179
+- Precision: 0.8800
+- Recall   : 0.7222
+- F1-score : 0.7934
+- ROC-AUC  : 0.9202
+
+Ý nghĩa:
+- Threshold tuning giúp:
+  + giảm False Positive
+  + tăng Precision
+  + giữ Recall ở mức tốt
+
+Trong ngân hàng thực tế:
+- Threshold thường không cố định ở 0.5.
+- Ngân hàng sẽ điều chỉnh threshold theo mức độ chấp nhận rủi ro.
+
+============================================================
+XIII. CLASSIFICATION REPORT ANALYSIS
+============================================================
+
+Non-default Customers (Class 0):
+- Precision: 0.93
+- Recall   : 0.97
+- F1-score : 0.95
+- Support  : 5095
+
+Default Customers (Class 1):
+- Precision: 0.88
+- Recall   : 0.72
+- F1-score : 0.79
+- Support  : 1422
+
+Ý nghĩa:
+- Model phân loại khách hàng tốt rất chính xác.
+- Recall đạt 97% cho Non-default customers.
+- Model phát hiện được khoảng 72% khách hàng có nguy cơ default.
+- Đây là kết quả khá mạnh đối với bài toán Credit Risk thực tế.
+
+============================================================
+XIV. BUSINESS PERFORMANCE INTERPRETATION
+============================================================
+
+Accuracy = 91.79%
+- Model có độ chính xác tổng thể cao.
+
+Precision = 88.00%
+- Trong các khách hàng bị dự đoán là risky:
+  + 88% thực sự default.
+
+Điều này giúp:
+- giảm từ chối nhầm khách hàng tốt.
+
+Recall = 72.22%
+- Model phát hiện được khoảng 72% khách hàng default.
+
+Trong ngân hàng:
+- Recall cực kỳ quan trọng vì:
+  + bỏ sót khách hàng xấu có thể gây financial loss.
+
+ROC-AUC = 0.9202
+
+ROC-AUC > 0.9 cho thấy:
+- Model có khả năng phân biệt khách tốt và khách xấu rất mạnh.
+- Đây là mức hiệu suất rất tốt trong bài toán tài chính.
+
+============================================================
+XV. PROFESSIONAL VISUALIZATION
+============================================================
+
+Các visualization đã được tạo thành công:
+
+visuals/
+├── model_performance_comparison.png
+├── confusion_matrix_professional.png
+├── roc_curve_professional.png
+├── precision_recall_curve_professional.png
+├── threshold_optimization_professional.png
+├── feature_importance_professional.png
+├── default_probability_distribution.png
+├── final_model_summary.png
+
+Ý nghĩa:
+- Giúp giải thích model trực quan hơn.
+- Tăng tính chuyên nghiệp của dashboard.
+- Hỗ trợ business interpretation.
+- Giúp bài báo cáo giống hệ thống thực tế hơn.
+
+============================================================
+XVI. BACKEND PREDICTION LOGIC SUPPORT
+============================================================
+
+Person 2 chịu trách nhiệm:
+- Load model
+- Viết predict function
+- Chuẩn hóa output prediction
+- Chuẩn bị dữ liệu cho Person 3 tích hợp dashboard
+
+Prediction Output:
+- Probability of Default
+- Credit Score
+- Risk Level
+- Loan Decision Support Data
+
+Lưu ý:
+- Person 2 chỉ xây dựng backend logic.
+- Person 3 sẽ tích hợp UI dashboard, SHAP explainability và decision display cuối cùng.
+
+============================================================
+XVII. BUSINESS KPI
+============================================================
+
+Các KPI chính của hệ thống:
+- Default Detection Rate
+- Loan Approval Rate
+- False Negative Risk
+- False Positive Risk
+- ROC-AUC
+
+Ý nghĩa:
+- Hệ thống không chỉ là Machine Learning,
+  mà còn hỗ trợ Banking Risk Analytics và Financial Decision Support.
+
+============================================================
+XVIII. SYSTEM ARCHITECTURE WORKFLOW
+============================================================
+
+Raw CSV Data
+        ↓
+MySQL Database
+        ↓
+SQL Cleaning & Processing
+        ↓
+Feature Engineering
+        ↓
+Risk Index Calculation
+        ↓
+PCA / Dimensionality Reduction
+        ↓
+Machine Learning Models
+        ↓
+Hyperparameter Tuning
+        ↓
+Threshold Optimization
+        ↓
+Backend Prediction Logic
+        ↓
+Dashboard Integration (Person 3)
+        ↓
+Loan Decision Support System
+
+Ý nghĩa:
+- Pipeline mô phỏng quy trình Credit Risk Analytics thực tế trong ngân hàng.
+
+============================================================
+XIX. MODEL LIMITATIONS
+============================================================
+
+1. Dataset Limitation
+- Dataset chưa phải dữ liệu ngân hàng thực tế.
+
+2. Macroeconomic Variables
+- Chưa tích hợp:
+  + Inflation
+  + GDP
+  + Interest Rate
+  + Unemployment Rate
+
+3. Time-series Credit Behavior
+- Chưa mô hình hóa lịch sử tín dụng theo thời gian.
+
+4. Explainable AI
+- SHAP sẽ được Person 3 triển khai trong dashboard.
+
+5. Real-time Prediction
+- Chưa triển khai API realtime.
+
+Ý nghĩa:
+- Giúp báo cáo có tư duy nghiên cứu chuyên nghiệp hơn.
+
+============================================================
+XX. FUTURE IMPROVEMENTS
+============================================================
+
+Các hướng phát triển tiếp theo:
+- LightGBM
+- CatBoost
+- Deep Learning Credit Scoring
+- SHAP Explainability
+- FastAPI / Flask API
+- Docker Deployment
+- AWS / GCP Cloud Deployment
+- Streamlit Realtime Dashboard
+
+Ý nghĩa:
+- Thể hiện khả năng mở rộng hệ thống trong tương lai.
+
+============================================================
+XXI. OUTPUT OF PERSON 2
+============================================================
+
+models/
+├── best_model.pkl
+├── best_model_name.pkl
+├── model_columns.pkl
+└── best_threshold.pkl
+
+reports/
+├── model_comparison_table.csv
+├── tuning_result.csv
+├── threshold_optimization.csv
+├── evaluation_report.txt
+├── feature_importance.csv
+└── person2_summary_report.csv
+
+visuals/
+├── model_performance_comparison.png
+├── confusion_matrix_professional.png
+├── roc_curve_professional.png
+├── precision_recall_curve_professional.png
+├── threshold_optimization_professional.png
+├── feature_importance_professional.png
+├── default_probability_distribution.png
+└── final_model_summary.png
+
+python/
+├── person2_ml_model.py
+├── predict_function.py
+├── model_loader.py
+├── dashboard_data.py
+└── test_predict.py
+
+============================================================
+XXII. FINAL CONCLUSION
+============================================================
+
+Person 2 đã xây dựng thành công:
+- Multiple Machine Learning Models
+- Advanced Ensemble Learning
+- XGBoost Integration
+- Hyperparameter Tuning Pipeline
+- Threshold Optimization
+- Professional Evaluation System
+- Advanced Visualization
+- Backend Prediction Logic
+- Deploy-ready Model Export
+
+Random Forest đạt hiệu suất tốt nhất với:
+- Accuracy : 91.79%
+- Precision: 88.00%
+- Recall   : 72.22%
+- ROC-AUC : 92.02%
+
+Kết quả cho thấy hệ thống có khả năng hỗ trợ:
+- Credit Risk Prediction
+- Loan Approval Decision Support
+- Banking Risk Analytics
+- Financial Decision Support System
+
+ở mức tương đối gần với quy trình triển khai thực tế trong ngành tài chính – ngân hàng hiện đại.
+
+3 ảnh đẹp nhất:
+
+executive_model_dashboard.png
+model_performance_comparison.png
+feature_importance_professional.png

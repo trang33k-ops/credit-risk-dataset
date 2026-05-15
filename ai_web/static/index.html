@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Credit Risk Nexus AI</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="grid-bg"></div>
+  <div class="aurora a1"></div>
+  <div class="aurora a2"></div>
+  <div class="aurora a3"></div>
+
+  <div class="app">
+    <aside class="side">
+      <div class="brand">
+        <div class="logo">CR</div>
+        <div>
+          <h2>Nexus AI</h2>
+          <p>10-Point Copilot</p>
+        </div>
+      </div>
+
+      <button class="new" onclick="newChat()">＋ New session</button>
+
+      <div class="control">
+        <label>Đối tượng hỏi</label>
+        <select id="persona">
+          <option value="student">Student</option>
+          <option value="beginner">Beginner</option>
+          <option value="teacher">Teacher</option>
+          <option value="banker">Banker</option>
+          <option value="business">Business</option>
+          <option value="defense">Defense</option>
+        </select>
+      </div>
+
+      <div class="control">
+        <label>Độ sâu câu trả lời</label>
+        <select id="depth">
+          <option value="short">Short</option>
+          <option value="balanced" selected>Balanced</option>
+          <option value="deep">Deep</option>
+        </select>
+      </div>
+
+      <div class="prompt-box">
+        <h3>Hỏi theo đối tượng</h3>
+        <button onclick="fillPrompt('web này là dự án gì vậy?')">Người xem: Dự án này là gì?</button>
+        <button onclick="fillPrompt('PCA là gì và dùng trong dự án này thế nào?')">Sinh viên: PCA là gì?</button>
+        <button onclick="fillPrompt('Nếu giáo viên hỏi vì sao Recall quan trọng hơn Accuracy thì trả lời sao?')">Defense: Recall vs Accuracy</button>
+        <button onclick="fillPrompt('Nếu tôi là banker, dashboard này giúp ra quyết định tín dụng thế nào?')">Banker: Business value</button>
+        <button onclick="fillPrompt('Giải thích vì sao khách hàng income cao vẫn bị reject?')">Risk: Reject reason</button>
+        <button onclick="fillPrompt('Hạn chế của dự án này là gì và nâng cấp tiếp ra sao?')">Teacher: limitations</button>
+      </div>
+
+      <div class="live">
+        <span></span>
+        <div>
+          <b>Local AI Ready</b>
+          <small>Ollama · Phi3 · RAG Mini</small>
+        </div>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="hero">
+        <div class="hero-text">
+          <div class="badge">CREDIT RISK · EXPLAINABLE ML · AUDIENCE-AWARE AI</div>
+          <h1>Credit Risk Nexus AI Copilot</h1>
+          <p>AI Web sinh động cho dashboard Credit Risk: hiểu dự án, trả lời theo đối tượng, hỗ trợ bảo vệ, giải thích ML và nghiệp vụ tín dụng.</p>
+        </div>
+        <div class="hero-panel">
+          <div><b>SQL</b><span>Data Foundation</span></div>
+          <div><b>ML</b><span>Prediction</span></div>
+          <div><b>SHAP</b><span>Explainability</span></div>
+          <div><b>AI</b><span>Defense Assistant</span></div>
+        </div>
+      </header>
+
+      <section id="messages" class="messages">
+        <div class="msg assistant">
+          <div class="avatar ai">AI</div>
+          <div class="bubble">
+            <b>Chào bạn 👋</b><br>
+            Mình là <b>Credit Risk Nexus AI Copilot 10-Point Edition</b>. Mình được thiết kế để trả lời đúng về dự án Credit Risk của bạn, giải thích theo từng đối tượng: sinh viên, giảng viên, banker, người mới học hoặc chế độ bảo vệ.
+            <br><br>
+            Bạn thử hỏi: <i>“web này là dự án gì?”</i> hoặc <i>“nếu giáo viên hỏi hạn chế dự án thì trả lời sao?”</i>
+          </div>
+        </div>
+      </section>
+
+      <footer class="composer">
+        <textarea id="input" placeholder="Nhập câu hỏi về dự án, ML, PCA, SHAP, Credit Score, thuyết trình..."></textarea>
+        <button id="send" onclick="sendMessage()">➤</button>
+      </footer>
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

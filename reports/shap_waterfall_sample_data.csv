@@ -1,0 +1,16 @@
+﻿feature,value,shap_value,abs_shap
+person_income,6000.0,3.805022,3.805022
+loan_to_income_ratio,0.541667,2.4433196,2.4433196
+person_home_ownership_RENT,0.0,-0.8914716,0.8914716
+loan_int_rate,8.59,-0.46865323,0.46865323
+loan_amnt,3250.0,0.12528719,0.12528719
+loan_grade_D,0.0,-0.109858565,0.109858565
+other_debt,1636.4491,0.091531605,0.091531605
+loan_intent_VENTURE,0.0,0.09014316,0.09014316
+credit_utilization_ratio,0.877914,-0.074445456,0.074445456
+open_accounts,7.0,0.065705344,0.065705344
+cb_person_cred_hist_length,9.0,-0.06515311,0.06515311
+person_home_ownership_OWN,0.0,0.060380075,0.060380075
+city_longitude,-123.1207,-0.056340836,0.056340836
+debt_to_income_ratio,0.814408,0.039453868,0.039453868
+loan_grade_E,0.0,-0.037100747,0.037100747

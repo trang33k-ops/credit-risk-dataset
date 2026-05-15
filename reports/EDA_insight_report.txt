@@ -1,0 +1,39 @@
+
+PERSON 1 — DATA LEAD INSIGHT REPORT
+
+1. Dataset Overview
+- Total rows after cleaning: 32581
+- Total original columns: 32
+- Total encoded ML features: 48
+- Total default cases: 7108
+- Overall default rate: 21.82%
+
+2. Loan Grade Insight
+- Highest default grade: G
+- Default rate of this grade: 98.44%
+- Interpretation: Loan grade is a strong indicator of credit risk.
+
+3. Loan Intent Insight
+- Highest risk loan purpose: DEBTCONSOLIDATION
+- Default rate: 28.59%
+- Interpretation: Loan purpose affects repayment behavior.
+
+4. Early Warning System
+- Highest risk level: Very High Risk
+- Default rate: 76.52%
+- Interpretation: The custom risk_index successfully separates customers into meaningful risk groups.
+
+5. PCA Output
+- PCA components generated: 10
+- Cumulative variance of 10 PCs: 46.61%
+- Interpretation: PCA compresses encoded features into lower-dimensional components for faster ML training.
+
+Final Deliverables:
+- data/data_clean.csv
+- data/data_feature.csv
+- data/pca_features.csv
+- models/X_pca.pkl
+- models/scaler.pkl
+- models/X_pca_data.pkl
+- reports/EDA reports
+- visuals/EDA and PCA charts

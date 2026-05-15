@@ -1,0 +1,2 @@
+﻿train_rows,test_rows,total_rows,train_percent,test_percent,train_default_rate,test_default_rate
+26064,6517,32581,80.0,20.0,21.82,21.82

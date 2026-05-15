@@ -1,0 +1,300 @@
+========================================================
+PERSON 1 — DATA LEAD REPORT
+SQL + DATA CLEANING + EDA + FEATURE ENGINEERING + PCA
+========================================================
+
+1. ROLE OF PERSON 1
+--------------------------------------------------------
+Person 1 chịu trách nhiệm toàn bộ lớp dữ liệu của hệ thống
+Credit Risk Analytics.
+
+Các nhiệm vụ chính:
+- Thiết kế cơ sở dữ liệu SQL
+- Làm sạch dữ liệu
+- Thực hiện EDA
+- Feature Engineering
+- Xây dựng Risk Index
+- Early Warning System
+- PCA (Dimensionality Reduction)
+- Xuất dữ liệu chuẩn cho Machine Learning và Dashboard
+
+Nếu dữ liệu sai hoặc không được xử lý đúng,
+toàn bộ model và dashboard phía sau sẽ sai.
+
+========================================================
+2. DATABASE DESIGN (MYSQL)
+========================================================
+
+Công cụ:
+- MySQL Workbench
+
+Database:
+- credit_risk_project
+
+Bảng chính:
+- credit_risk_dataset
+- credit_risk_feature
+
+Mục tiêu:
+- Lưu trữ dữ liệu tín dụng có cấu trúc
+- Cho phép query dữ liệu như hệ thống ngân hàng thực tế
+- Hỗ trợ Dashboard và Machine Learning
+
+Các bước thực hiện:
+1. Tạo database
+2. Import CSV
+3. Cleaning dữ liệu bằng SQL
+4. Tạo feature table
+5. Tính risk_index
+6. Tạo risk_level
+
+========================================================
+3. DATA CLEANING
+========================================================
+
+Công cụ:
+- MySQL Workbench
+- Python VS Code
+
+Các bước:
+- Xóa duplicate
+- Xử lý missing values
+- Chuẩn hóa numeric columns
+- Chuẩn hóa categorical columns
+
+Ví dụ:
+- fill median cho numeric
+- fill "Unknown" cho categorical
+
+Ý nghĩa:
+- Tăng độ tin cậy dữ liệu
+- Tránh model học sai
+- Giảm noise dữ liệu
+
+========================================================
+4. EDA (EXPLORATORY DATA ANALYSIS)
+========================================================
+
+Công cụ:
+- Python
+- Pandas
+- Matplotlib
+
+Các phân tích:
+- Default rate by loan_grade
+- Default rate by loan_intent
+- Default rate by country
+- Risk level analysis
+
+Các câu hỏi nghiệp vụ:
+- Loan grade nào rủi ro nhất?
+- Mục đích vay nào dễ default?
+- Quốc gia nào có tỷ lệ rủi ro cao?
+- Risk Index có phản ánh đúng rủi ro không?
+
+Output:
+- eda_default_by_grade.csv
+- eda_default_by_intent.csv
+- eda_default_by_country.csv
+
+========================================================
+5. FEATURE ENGINEERING
+========================================================
+
+Feature mới:
+--------------------------------------------------------
+
+1. risk_index
+--------------------------------------------------------
+Công thức:
+
+risk_index =
+loan_percent_income * 0.4 +
+debt_to_income_ratio * 0.3 +
+credit_utilization_ratio * 0.3
+
+Ý nghĩa:
+- Đo áp lực tài chính tổng hợp
+- Phản ánh mức độ rủi ro khách hàng
+
+--------------------------------------------------------
+
+2. risk_behavior
+--------------------------------------------------------
+Công thức:
+
+risk_behavior =
+past_delinquencies * 2 +
+(cb_person_default_on_file == 'Y') * 3
+
+Ý nghĩa:
+- Đánh giá hành vi tín dụng quá khứ
+- Khách hàng từng default sẽ có risk cao hơn
+
+--------------------------------------------------------
+
+3. risk_level
+--------------------------------------------------------
+Các mức:
+- Low Risk
+- Medium Risk
+- High Risk
+- Very High Risk
+
+Ý nghĩa:
+- Hệ thống cảnh báo sớm
+- Giúp dashboard trực quan hơn
+
+========================================================
+6. PCA (DIMENSIONALITY REDUCTION)
+========================================================
+
+Công cụ:
+- Python
+- scikit-learn
+
+Quy trình:
+1. One-hot encoding
+2. StandardScaler
+3. PCA
+
+Mục tiêu:
+- Giảm số chiều dữ liệu
+- Giảm overfitting
+- Tăng tốc training model
+- Giữ lại thông tin quan trọng
+
+Kết quả:
+- 10 Principal Components
+
+Output:
+- X_pca.pkl
+- scaler.pkl
+- X_pca_data.pkl
+- pca_features.csv
+
+========================================================
+7. VISUALIZATION
+========================================================
+
+Biểu đồ được tạo:
+- Default Rate by Loan Grade
+- Default Rate by Loan Intent
+- Default Rate by Risk Level
+- PCA Explained Variance
+- PCA Cumulative Variance
+- Risk Index Distribution
+
+Output:
+- default_rate_by_grade.png
+- default_rate_by_intent.png
+- default_rate_by_risk_level.png
+- pca_explained_variance.png
+- pca_cumulative_variance.png
+- risk_index_distribution.png
+
+========================================================
+8. OUTPUT FILES
+========================================================
+
+Folder structure:
+
+credit_risk_project/
+│
+├── sql/
+│   └── person1_sql.sql
+│
+├── data/
+│   ├── data_clean.csv
+│   ├── data_feature.csv
+│   ├── pca_features.csv
+│   └── risk_threshold_report.csv
+│
+├── models/
+│   ├── X_pca.pkl
+│   ├── scaler.pkl
+│   └── X_pca_data.pkl
+│
+├── reports/
+│   ├── eda_default_by_grade.csv
+│   ├── feature_dictionary.csv
+│   ├── person1_summary_report.csv
+│   └── EDA_insight_report.txt
+│
+├── visuals/
+│   ├── default_rate_by_grade.png
+│   ├── default_rate_by_intent.png
+│   ├── default_rate_by_risk_level.png
+│   ├── pca_explained_variance.png
+│   ├── pca_cumulative_variance.png
+│   └── risk_index_distribution.png
+│
+└── person1_data_lead.py
+
+========================================================
+9. TOOLS USED
+========================================================
+
+SQL Database:
+- MySQL Workbench
+
+Programming:
+- Python
+- VS Code
+
+Libraries:
+- pandas
+- numpy
+- matplotlib
+- sklearn
+- sqlalchemy
+- mysql-connector-python
+- joblib
+
+========================================================
+10. WORKFLOW SUMMARY
+========================================================
+
+SQL Database
+→ MySQL Workbench
+
+Cleaning SQL
+→ MySQL Workbench
+
+EDA Queries
+→ MySQL Workbench
+
+Feature Engineering
+→ Python VS Code
+
+PCA
+→ Python VS Code
+
+Visualization
+→ Python VS Code
+
+Export CSV/PKL
+→ Python VS Code
+
+Dashboard (Future)
+→ Streamlit VS Code
+
+========================================================
+11. CONCLUSION
+========================================================
+
+Person 1 đóng vai trò nền tảng của toàn bộ hệ thống
+Credit Risk Analytics.
+
+Kết quả của Person 1 sẽ được chuyển cho:
+- Person 2 để train Machine Learning model
+- Person 3 để xây dựng Dashboard và SHAP Analysis
+
+Toàn bộ dữ liệu sau xử lý đã sẵn sàng cho:
+- Machine Learning
+- Dashboard
+- Credit Scoring
+- Risk Prediction
+- Early Warning System
+
+========================================================

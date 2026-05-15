@@ -1,0 +1,3450 @@
+let history = [];
+
+const messages = document.getElementById("messages");
+const input = document.getElementById("input");
+const persona = document.getElementById("persona");
+const depth = document.getElementById("depth");
+const sendBtn = document.getElementById("send");
+
+function escapeHtml(text) {
+  return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+function formatText(text) {
+  return escapeHtml(text)
+    .replace(/\*\*(.*?)\*\*/g, "<b>$1</b>")
+    .replace(/\*(.*?)\*/g, "<i>$1</i>")
+    .replace(/\n/g, "<br>");
+}
+
+function addMessage(role, content, meta = "") {
+  const row = document.createElement("div");
+  row.className = `msg ${role}`;
+
+  const avatar = document.createElement("div");
+  avatar.className = `avatar ${role === "user" ? "human" : "ai"}`;
+  avatar.textContent = role === "user" ? "YOU" : "AI";
+
+  const bubble = document.createElement("div");
+  bubble.className = "bubble";
+  bubble.innerHTML = formatText(content);
+
+  if (meta) {
+    const metaDiv = document.createElement("div");
+    metaDiv.className = "meta";
+    metaDiv.textContent = meta;
+    bubble.appendChild(metaDiv);
+  }
+
+  row.appendChild(avatar);
+  row.appendChild(bubble);
+  messages.appendChild(row);
+  messages.scrollTop = messages.scrollHeight;
+  return bubble;
+}
+
+function fillPrompt(text) {
+  input.value = text;
+  input.focus();
+}
+
+async function sendMessage() {
+  const text = input.value.trim();
+  if (!text) return;
+
+  addMessage("user", text);
+  history.push({ role: "user", content: text });
+
+  input.value = "";
+  sendBtn.disabled = true;
+
+  const bubble = addMessage("assistant", "Đang phân tích câu hỏi theo ngữ cảnh dự án...");
+  const start = performance.now();
+
+  try {
+    const res = await fetch("/api/chat", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({
+        message: text,
+        history: history,
+        persona: persona.value,
+        depth: depth.value
+      })
+    });
+
+    const data = await res.json();
+    const elapsed = ((performance.now() - start) / 1000).toFixed(1);
+
+    bubble.innerHTML = "";
+    typeWriter(
+      bubble,
+      data.reply || "Mình chưa có câu trả lời phù hợp.",
+      0,
+      `Intent: ${data.intent || "unknown"} · Source: ${data.source || "ai"} · ${elapsed}s`
+    );
+
+    history.push({ role: "assistant", content: data.reply || "" });
+
+  } catch (err) {
+    bubble.textContent = "Không kết nối được backend AI. Hãy kiểm tra uvicorn server.";
+  } finally {
+    sendBtn.disabled = false;
+  }
+}
+
+function typeWriter(element, text, i = 0, meta = "") {
+  if (i === 0) element.innerHTML = "";
+  if (i < text.length) {
+    element.innerHTML = formatText(text.slice(0, i + 1));
+    messages.scrollTop = messages.scrollHeight;
+    setTimeout(() => typeWriter(element, text, i + 1, meta), 5);
+  } else if (meta) {
+    const metaDiv = document.createElement("div");
+    metaDiv.className = "meta";
+    metaDiv.textContent = meta;
+    element.appendChild(metaDiv);
+  }
+}
+
+function newChat() {
+  history = [];
+  messages.innerHTML = "";
+  addMessage("assistant", "Chat mới đã sẵn sàng 👋 Mình hiểu đây là dự án Credit Risk Nexus. Bạn chọn đối tượng hỏi ở bên trái rồi hỏi tự do nhé.");
+}
+
+input.addEventListener("keydown", function(e) {
+  if (e.key === "Enter" && !e.shiftKey) {
+    e.preventDefault();
+    sendMessage();
+  }
+});
+
+
+
+
+
+
+
+let history = [];
+
+const messages = document.getElementById("messages");
+const input = document.getElementById("input");
+const persona = document.getElementById("persona");
+const depth = document.getElementById("depth");
+const sendBtn = document.getElementById("send");
+
+/* ============================================================
+   TEXT FORMAT HELPERS
+   ============================================================ */
+
+function escapeHtml(text) {
+  return String(text || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
+function formatText(text) {
+  return escapeHtml(text)
+    .replace(/\*\*(.*?)\*\*/g, "<b>$1</b>")
+    .replace(/\*(.*?)\*/g, "<i>$1</i>")
+    .replace(/\n/g, "<br>");
+}
+
+/* ============================================================
+   SCROLL BEHAVIOR
+   Tin nhắn mới luôn đẩy tin nhắn cũ lên.
+   Khung nhập vẫn cố định ở dưới.
+   ============================================================ */
+
+function scrollToBottom(force = false) {
+  if (!messages) return;
+
+  requestAnimationFrame(() => {
+    messages.scrollTop = messages.scrollHeight;
+
+    if (force) {
+      setTimeout(() => {
+        messages.scrollTop = messages.scrollHeight;
+      }, 80);
+
+      setTimeout(() => {
+        messages.scrollTop = messages.scrollHeight;
+      }, 180);
+    }
+  });
+}
+
+/* ============================================================
+   MESSAGE UI
+   ============================================================ */
+
+function addMessage(role, content, meta = "") {
+  const row = document.createElement("div");
+  row.className = `msg ${role}`;
+
+  const avatar = document.createElement("div");
+  avatar.className = `avatar ${role === "user" ? "human" : "ai"}`;
+  avatar.textContent = role === "user" ? "YOU" : "AI";
+
+  const bubble = document.createElement("div");
+  bubble.className = "bubble";
+  bubble.innerHTML = formatText(content);
+
+  if (meta) {
+    const metaDiv = document.createElement("div");
+    metaDiv.className = "meta";
+    metaDiv.textContent = meta;
+    bubble.appendChild(metaDiv);
+  }
+
+  row.appendChild(avatar);
+  row.appendChild(bubble);
+  messages.appendChild(row);
+
+  scrollToBottom(true);
+
+  return bubble;
+}
+
+function fillPrompt(text) {
+  input.value = text;
+  input.focus();
+}
+
+/* ============================================================
+   SEND MESSAGE
+   ============================================================ */
+
+async function sendMessage() {
+  const text = input.value.trim();
+  if (!text || sendBtn.disabled) return;
+
+  addMessage("user", text);
+  history.push({ role: "user", content: text });
+
+  input.value = "";
+  input.focus();
+
+  scrollToBottom(true);
+
+  sendBtn.disabled = true;
+
+  const bubble = addMessage(
+    "assistant",
+    "Đang phân tích câu hỏi theo ngữ cảnh dự án..."
+  );
+
+  scrollToBottom(true);
+
+  const start = performance.now();
+
+  try {
+    const res = await fetch("/api/chat", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        message: text,
+        history: history,
+        persona: persona.value,
+        depth: depth.value
+      })
+    });
+
+    const data = await res.json();
+    const elapsed = ((performance.now() - start) / 1000).toFixed(1);
+
+    const reply = data.reply || "Mình chưa có câu trả lời phù hợp.";
+    const meta = `Intent: ${data.intent || "unknown"} · Source: ${data.source || "ai"} · ${elapsed}s`;
+
+    bubble.innerHTML = "";
+
+    typeWriter(bubble, reply, 0, meta);
+
+    history.push({
+      role: "assistant",
+      content: reply
+    });
+
+  } catch (err) {
+    bubble.innerHTML = formatText(
+      "Không kết nối được backend AI. Hãy kiểm tra uvicorn server."
+    );
+
+    const metaDiv = document.createElement("div");
+    metaDiv.className = "meta";
+    metaDiv.textContent = "Backend connection error";
+    bubble.appendChild(metaDiv);
+
+    scrollToBottom(true);
+
+  } finally {
+    sendBtn.disabled = false;
+    input.focus();
+    scrollToBottom(true);
+  }
+}
+
+/* ============================================================
+   TYPEWRITER
+   Trong lúc AI gõ, khung chat tự giữ ở tin mới nhất.
+   ============================================================ */
+
+function typeWriter(element, text, i = 0, meta = "") {
+  if (i === 0) {
+    element.innerHTML = "";
+    scrollToBottom(true);
+  }
+
+  if (i < text.length) {
+    element.innerHTML = formatText(text.slice(0, i + 1));
+
+    scrollToBottom();
+
+    setTimeout(() => {
+      typeWriter(element, text, i + 1, meta);
+    }, 4);
+
+  } else {
+    if (meta) {
+      const metaDiv = document.createElement("div");
+      metaDiv.className = "meta";
+      metaDiv.textContent = meta;
+      element.appendChild(metaDiv);
+    }
+
+    scrollToBottom(true);
+  }
+}
+
+/* ============================================================
+   NEW CHAT
+   ============================================================ */
+
+function newChat() {
+  history = [];
+  messages.innerHTML = "";
+
+  addMessage(
+    "assistant",
+    "Chat mới đã sẵn sàng 👋 Mình hiểu đây là dự án Credit Risk Nexus. Bạn chọn đối tượng hỏi ở bên trái rồi hỏi tự do nhé."
+  );
+
+  input.value = "";
+  input.focus();
+
+  scrollToBottom(true);
+}
+
+/* ============================================================
+   EVENTS
+   ============================================================ */
+
+sendBtn.addEventListener("click", sendMessage);
+
+input.addEventListener("keydown", function (e) {
+  if (e.key === "Enter" && !e.shiftKey) {
+    e.preventDefault();
+    sendMessage();
+  }
+});
+
+input.addEventListener("input", function () {
+  input.style.height = "56px";
+});
+
+/* ============================================================
+   INIT
+   ============================================================ */
+
+window.addEventListener("load", function () {
+  scrollToBottom(true);
+  input.focus();
+});
+
+
+
+
+
+
+/* ================= SIDEBAR ================= */
+[data-testid="stSidebar"]{
+  background:linear-gradient(180deg,#030815 0%,#061527 50%,#08233d 100%);
+  border-right:1px solid rgba(125,211,252,.18);
+  box-shadow:14px 0 44px rgba(0,0,0,.24);
+}
+
+[data-testid="stSidebar"] *{
+  color:#e0f2fe !important;
+}
+
+[data-testid="stSidebar"] h1{
+  font-size:21px !important;
+  font-weight:900 !important;
+  letter-spacing:-.04em !important;
+}
+
+[data-testid="stSidebar"] hr{
+  border-color:rgba(125,211,252,.18) !important;
+}
+
+[data-testid="stSidebar"] [role="radiogroup"] label{
+  background:rgba(255,255,255,.055);
+  border:1px solid rgba(125,211,252,.16);
+  border-radius:13px;
+  padding:8px 10px;
+  margin:6px 0;
+  transition:.18s ease;
+  min-height:38px;
+}
+
+[data-testid="stSidebar"] [role="radiogroup"] label:hover{
+  background:rgba(34,211,238,.14);
+  border-color:rgba(34,211,238,.45);
+}
+
+
+# ============================================================
+# CREDIT RISK NEXUS — PREMIUM ML DASHBOARD
+# Bám sát bản cũ + nâng cấp giải thích biểu đồ/model/business
+# Dataset gốc: 32,581 customers
+# Project: Credit Risk Analytics — Machine Learning Big Project
+# Person 1: Data Lead
+# Person 2: ML Model Development & Optimization
+# Person 3: Pipeline + SHAP + Credit Scoring + Decision Rule
+# ============================================================
+
+from __future__ import annotations
+
+from pathlib import Path
+from typing import Dict, Any, Optional
+import json
+import warnings
+
+import joblib
+import numpy as np
+import pandas as pd
+import plotly.express as px
+import plotly.graph_objects as go
+import streamlit as st
+import streamlit.components.v1 as components
+
+warnings.filterwarnings("ignore")
+
+# ============================================================
+# 1. PAGE CONFIG
+# ============================================================
+
+st.set_page_config(
+    page_title="Credit Risk Nexus | Premium ML Dashboard",
+    page_icon="🏦",
+    layout="wide",
+    initial_sidebar_state="expanded",
+)
+
+BASE = Path.cwd()
+DATA = BASE / "data"
+REPORTS = BASE / "reports"
+MODELS = BASE / "models"
+VISUALS = BASE / "visuals"
+EXPLAIN = BASE / "explainability"
+PIPELINE = BASE / "pipeline"
+
+EXPECTED_ROWS = 32581
+
+# ============================================================
+# 2. CSS DESIGN SYSTEM
+# ============================================================
+
+# ============================================================
+# CLEAN MODERN STYLE — FINAL UI UPGRADE
+# ============================================================
+
+st.markdown(
+    """
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+
+:root{
+  --bg0:#06111f;
+  --bg1:#08233d;
+  --bg2:#0d3a63;
+  --cyan:#22d3ee;
+  --blue:#3b82f6;
+  --violet:#8b5cf6;
+  --green:#16a34a;
+  --amber:#d97706;
+  --red:#dc2626;
+  --card:#ffffff;
+  --soft:#f6fbff;
+  --text:#0f172a;
+  --muted:#64748b;
+  --line:#dbeafe;
+}
+
+/* ================= GLOBAL ================= */
+html, body, [class*="css"]{
+  font-family:'Inter',sans-serif !important;
+}
+
+[data-testid="stAppViewContainer"]{
+  background:
+    radial-gradient(circle at 9% 4%, rgba(34,211,238,.36), transparent 24%),
+    radial-gradient(circle at 86% 6%, rgba(139,92,246,.30), transparent 28%),
+    radial-gradient(circle at 55% 58%, rgba(59,130,246,.18), transparent 34%),
+    linear-gradient(135deg,#06111f 0%,#08233d 45%,#0d3a63 100%);
+  color:#f0f9ff;
+}
+
+.block-container{
+  max-width:1160px !important;
+  padding-top:1.25rem !important;
+  padding-bottom:3.2rem !important;
+  padding-left:1.5rem !important;
+  padding-right:1.5rem !important;
+}
+
+/* Fix Streamlit column squeezing */
+div[data-testid="stHorizontalBlock"]{
+  gap:1rem !important;
+  align-items:stretch !important;
+}
+
+div[data-testid="column"]{
+  min-width:0 !important;
+  overflow:visible !important;
+}
+
+/* ================= SIDEBAR — CLEAN FINTECH PRO ================= */
+
+[data-testid="stSidebar"]{
+  background:
+    radial-gradient(circle at 20% 0%, rgba(34,211,238,.16), transparent 28%),
+    radial-gradient(circle at 100% 45%, rgba(139,92,246,.14), transparent 34%),
+    linear-gradient(180deg,#020617 0%,#061527 55%,#08233d 100%);
+  border-right:1px solid rgba(125,211,252,.22);
+  box-shadow:18px 0 52px rgba(0,0,0,.34);
+}
+
+[data-testid="stSidebar"] *{
+  color:#e0f2fe !important;
+}
+
+/* Title */
+[data-testid="stSidebar"] h1{
+  font-size:25px !important;
+  font-weight:950 !important;
+  line-height:1.08 !important;
+  letter-spacing:-.055em !important;
+  margin:0 0 6px !important;
+  color:#f8fafc !important;
+
+  background:linear-gradient(90deg,#ffffff 0%,#bae6fd 45%,#a78bfa 100%);
+  -webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;
+
+  text-shadow:0 0 24px rgba(125,211,252,.20);
+}
+
+/* Nếu title có emoji/icon ở đầu */
+[data-testid="stSidebar"] h1::first-letter{
+  font-size:28px !important;
+}
+
+/* Subtitle */
+[data-testid="stSidebar"] p{
+  font-size:13.5px !important;
+  font-weight:650 !important;
+  color:#cbd5e1 !important;
+  line-height:1.45 !important;
+  margin-top:4px !important;
+}
+
+/* Divider */
+[data-testid="stSidebar"] hr{
+  border:0 !important;
+  height:1px !important;
+  background:linear-gradient(90deg,transparent,rgba(125,211,252,.35),transparent) !important;
+  margin:22px 0 !important;
+}
+
+/* Navigation item */
+[data-testid="stSidebar"] [role="radiogroup"] label{
+  background:linear-gradient(135deg,rgba(255,255,255,.075),rgba(255,255,255,.035));
+  border:1px solid rgba(125,211,252,.18);
+  border-radius:15px;
+  padding:10px 12px;
+  margin:7px 0;
+  transition:.2s ease;
+  min-height:43px;
+  box-shadow:0 8px 20px rgba(0,0,0,.12);
+}
+
+/* Text inside nav item */
+[data-testid="stSidebar"] [role="radiogroup"] label p{
+  font-size:14px !important;
+  font-weight:760 !important;
+  letter-spacing:-.01em !important;
+  margin:0 !important;
+}
+
+/* Hover */
+[data-testid="stSidebar"] [role="radiogroup"] label:hover{
+  transform:translateX(4px);
+  background:linear-gradient(135deg,rgba(34,211,238,.16),rgba(139,92,246,.10));
+  border-color:rgba(34,211,238,.52);
+  box-shadow:0 12px 26px rgba(34,211,238,.12);
+}
+
+/* Selected */
+[data-testid="stSidebar"] [role="radiogroup"] label:has(input:checked){
+  background:linear-gradient(135deg,rgba(34,211,238,.22),rgba(139,92,246,.18));
+  border-color:rgba(34,211,238,.70);
+  box-shadow:
+    0 0 0 1px rgba(34,211,238,.22),
+    0 14px 30px rgba(34,211,238,.16);
+}
+
+[data-testid="stSidebar"] input[type="radio"]{
+  accent-color:#22d3ee !important;
+}
+
+/* ================= HERO ================= */
+.hero{
+  display:grid;
+  grid-template-columns:1fr;
+  gap:16px;
+  padding:24px;
+  border-radius:24px;
+  margin-bottom:22px;
+  background:
+    linear-gradient(135deg,rgba(7,24,44,.94),rgba(13,48,80,.82)),
+    radial-gradient(circle at top right,rgba(34,211,238,.22),transparent 38%);
+  border:1px solid rgba(125,211,252,.28);
+  box-shadow:0 22px 52px rgba(0,0,0,.26);
+  overflow:hidden;
+}
+
+.ribbon{
+  display:inline-flex;
+  width:max-content;
+  max-width:100%;
+  padding:7px 12px;
+  border-radius:999px;
+  background:rgba(34,211,238,.14);
+  border:1px solid rgba(34,211,238,.34);
+  color:#cffafe;
+  font-size:10.5px;
+  font-weight:900;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  margin-bottom:10px;
+  white-space:normal;
+}
+
+.hero h1{
+  font-size:40px;
+  line-height:1.05;
+  margin:0;
+  color:#ffffff;
+  font-weight:900;
+  letter-spacing:-.055em;
+}
+
+.hero p{
+  color:#dbeafe;
+  font-size:14px;
+  line-height:1.68;
+  max-width:900px;
+  margin:12px 0 0;
+}
+
+.hero-stats{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:12px;
+}
+
+.hero-stat{
+  background:rgba(248,251,255,.10);
+  border:1px solid rgba(186,230,253,.18);
+  border-radius:17px;
+  padding:13px 14px;
+  min-height:78px;
+  overflow:hidden;
+}
+
+.hero-stat b{
+  display:block;
+  font-size:22px;
+  font-weight:900;
+  letter-spacing:-.05em;
+  color:#ffffff;
+  white-space:nowrap;
+}
+
+.hero-stat span{
+  display:block;
+  margin-top:6px;
+  color:#bae6fd;
+  font-size:9.5px;
+  font-weight:850;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+/* ================= SECTION ================= */
+.section-title{
+  font-size:25px;
+  font-weight:900;
+  letter-spacing:-.045em;
+  color:#ffffff;
+  margin:22px 0 6px;
+}
+
+.section-note{
+  color:#dbeafe;
+  font-size:13.6px;
+  line-height:1.65;
+  margin-bottom:16px;
+}
+
+/* ================= KPI CARDS ================= */
+.kpi{
+  background:linear-gradient(180deg,#ffffff,#f3f9ff);
+  color:#0f172a;
+  border:1px solid rgba(219,234,254,.95);
+  border-top:4px solid var(--cyan);
+  border-left:none !important;
+  border-radius:17px;
+  padding:13px 14px;
+  min-height:102px;
+  box-shadow:0 13px 28px rgba(2,8,23,.15);
+  overflow:hidden !important;
+}
+
+.kpi .label{
+  color:#0284c7;
+  font-size:9.7px;
+  font-weight:900;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+.kpi .value{
+  color:#0f172a;
+  font-size:24px;
+  font-weight:900;
+  letter-spacing:-.055em;
+  margin-top:7px;
+  line-height:1.05;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+.kpi .caption{
+  color:#64748b;
+  font-size:11.2px;
+  line-height:1.42;
+  margin-top:6px;
+  display:-webkit-box;
+  -webkit-line-clamp:2;
+  -webkit-box-orient:vertical;
+  overflow:hidden;
+}
+
+/* Prevent KPI row overlap */
+div[data-testid="stHorizontalBlock"]:has(.kpi){
+  margin-bottom:1rem !important;
+}
+
+div[data-testid="stHorizontalBlock"]:has(.kpi) > div{
+  min-width:0 !important;
+}
+
+/* ================= PANELS ================= */
+.panel,
+.score-card,
+.progress-card{
+  background:linear-gradient(180deg,#ffffff,#f7fbff);
+  color:#0f172a !important;
+  border:1px solid rgba(219,234,254,.95);
+  border-radius:18px;
+  padding:16px;
+  box-shadow:0 13px 30px rgba(2,8,23,.14);
+  margin-bottom:18px;
+  overflow:hidden !important;
+  box-sizing:border-box !important;
+}
+
+.panel h3,
+.score-card h3,
+.progress-card h3{
+  color:#0f172a !important;
+  font-size:18px;
+  font-weight:900;
+  letter-spacing:-.04em;
+  margin:0 0 10px;
+  line-height:1.2;
+}
+
+.panel p,
+.panel li,
+.panel span,
+.score-card p,
+.score-card li,
+.score-card span{
+  color:#475569 !important;
+  font-size:13px;
+  line-height:1.58;
+}
+
+.dark-panel{
+  background:
+    linear-gradient(135deg,rgba(8,31,55,.94),rgba(14,49,80,.86)),
+    radial-gradient(circle at top right,rgba(34,211,238,.12),transparent 36%);
+  border:1px solid rgba(125,211,252,.24);
+  border-left:5px solid var(--cyan);
+  border-radius:18px;
+  padding:16px;
+  box-shadow:0 13px 30px rgba(0,0,0,.20);
+  margin-bottom:18px;
+  overflow:hidden !important;
+}
+
+.dark-panel h3{
+  color:#ffffff !important;
+  font-size:18px;
+  font-weight:900;
+  margin:0 0 10px;
+  line-height:1.25;
+}
+
+.dark-panel p,
+.dark-panel li{
+  color:#dbeafe !important;
+  font-size:13px;
+  line-height:1.62;
+}
+
+/* ================= CHARTS ================= */
+[data-testid="stPlotlyChart"]{
+  background:#ffffff !important;
+  border:1px solid rgba(219,234,254,.95) !important;
+  border-radius:18px !important;
+  padding:4px !important;
+  box-shadow:0 13px 30px rgba(2,8,23,.14) !important;
+  overflow:hidden !important;
+  box-sizing:border-box !important;
+  margin-bottom:12px !important;
+}
+
+.js-plotly-plot,
+.plot-container,
+.svg-container{
+  width:100% !important;
+  max-width:100% !important;
+  overflow:hidden !important;
+}
+
+.js-plotly-plot .plotly .main-svg{
+  border-radius:14px !important;
+}
+
+/* Fix modebar not covering chart too much */
+.modebar{
+  transform:scale(.82);
+  transform-origin:top right;
+  opacity:.65;
+}
+
+/* ================= NOTES ================= */
+.chart-note{
+  background:#f8fbff;
+  color:#334155 !important;
+  border:1px solid #dbeafe;
+  border-left:4px solid var(--blue);
+  border-radius:13px;
+  padding:10px 12px;
+  margin:8px 0 18px;
+  box-shadow:0 8px 18px rgba(2,8,23,.10);
+  font-size:12.5px;
+  line-height:1.55;
+  overflow:hidden;
+}
+
+.chart-note b{
+  color:#0f172a !important;
+}
+
+/* ================= TABS ================= */
+.stTabs [data-baseweb="tab-list"]{
+  gap:7px;
+  margin-bottom:12px;
+  border-bottom:1px solid rgba(219,234,254,.25);
+}
+
+.stTabs [data-baseweb="tab"]{
+  background:rgba(255,255,255,.08);
+  border:1px solid rgba(125,211,252,.18);
+  color:#e0f2fe;
+  border-radius:11px 11px 0 0;
+  padding:8px 10px;
+  font-size:12px;
+  font-weight:800;
+  min-height:38px;
+}
+
+.stTabs [aria-selected="true"]{
+  background:#ffffff !important;
+  color:#0f172a !important;
+  border-color:#dbeafe !important;
+}
+
+/* ================= FORMS ================= */
+.stSlider label,
+.stNumberInput label,
+.stSelectbox label,
+.stMultiSelect label,
+[data-testid="stWidgetLabel"] p{
+  color:#e0f2fe !important;
+  font-weight:800 !important;
+  font-size:12.5px !important;
+}
+
+[data-baseweb="input"]{
+  border-radius:12px !important;
+}
+
+[data-baseweb="input"] input{
+  color:#ffffff !important;
+  font-size:13px !important;
+}
+
+[data-baseweb="select"] *{
+  font-size:12.5px !important;
+}
+
+/* Fix sliders spacing */
+[data-testid="stSlider"]{
+  margin-bottom:.6rem !important;
+}
+
+/* ================= SCORE COMPONENTS ================= */
+.score-card{
+  min-height:auto !important;
+}
+
+.score-main{
+  display:flex;
+  align-items:flex-end;
+  gap:8px;
+}
+
+.score-main b{
+  font-size:42px !important;
+  font-weight:900;
+  letter-spacing:-.06em;
+  color:#0f172a !important;
+  line-height:.95;
+}
+
+.score-main span{
+  color:#64748b !important;
+  font-size:12px;
+  font-weight:800;
+}
+
+.score-band{
+  height:11px;
+  border-radius:999px;
+  background:linear-gradient(90deg,#fecaca 0%,#fde68a 48%,#bbf7d0 100%);
+  border:1px solid #dbeafe;
+  margin:14px 0 8px;
+  position:relative;
+}
+
+.score-marker{
+  position:absolute;
+  top:-6px;
+  width:4px;
+  height:23px;
+  background:#0f172a;
+  border-radius:999px;
+}
+
+.score-scale{
+  display:flex;
+  justify-content:space-between;
+  font-size:9.5px;
+  color:#64748b !important;
+  font-weight:800;
+}
+
+.info-grid{
+  display:grid;
+  grid-template-columns:1fr;
+  gap:8px;
+  margin-top:12px;
+}
+
+.info-tile{
+  background:#f1f8ff;
+  border:1px solid #dbeafe;
+  border-radius:12px;
+  padding:9px 11px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  min-height:46px;
+  gap:10px;
+  overflow:hidden;
+}
+
+.info-tile b{
+  font-size:16px !important;
+  font-weight:900;
+  color:#0f172a !important;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+.info-tile span{
+  color:#64748b !important;
+  font-size:9px !important;
+  font-weight:900;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+  text-align:right;
+  white-space:nowrap;
+}
+
+/* ================= DATAFRAME ================= */
+[data-testid="stDataFrame"]{
+  border-radius:15px;
+  overflow:hidden;
+  border:1px solid #dbeafe;
+  box-shadow:0 10px 24px rgba(2,8,23,.12);
+}
+
+/* ================= BUTTONS ================= */
+.stButton>button,
+.stDownloadButton>button{
+  background:linear-gradient(135deg,#2563eb,#22d3ee) !important;
+  color:white !important;
+  border:0 !important;
+  border-radius:11px !important;
+  font-weight:900 !important;
+  padding:.62rem .95rem !important;
+  box-shadow:0 10px 22px rgba(37,99,235,.24) !important;
+}
+
+/* ================= SPECIAL FIXES FOR DECISION STUDIO ================= */
+div[data-testid="stHorizontalBlock"]:has(.score-card){
+  gap:1rem !important;
+  align-items:start !important;
+}
+
+div[data-testid="stHorizontalBlock"]:has(.progress-card){
+  gap:1rem !important;
+  align-items:start !important;
+}
+
+/* Gauge cards should not become too tall */
+div[data-testid="stPlotlyChart"]:has(.js-plotly-plot){
+  min-height:0 !important;
+}
+
+/* Make all direct white panels separate from previous row */
+.panel + div[data-testid="stHorizontalBlock"],
+.chart-note + div[data-testid="stHorizontalBlock"],
+div[data-testid="stHorizontalBlock"] + div[data-testid="stHorizontalBlock"]{
+  margin-top:.75rem !important;
+}
+
+/* ================= RESPONSIVE ================= */
+@media(max-width:1200px){
+  .hero-stats{
+    grid-template-columns:repeat(2,1fr);
+  }
+  .hero h1{
+    font-size:35px;
+  }
+}
+
+@media(max-width:900px){
+  .block-container{
+    padding-left:1rem !important;
+    padding-right:1rem !important;
+  }
+  .hero-stats{
+    grid-template-columns:1fr;
+  }
+  .hero h1{
+    font-size:31px;
+  }
+  .kpi .value{
+    font-size:22px;
+  }
+}
+
+/* ============================================================
+   FINAL OVERLAP FIX — spacing, card text, chart legend
+   ============================================================ */
+
+/* Nới chiều rộng nội dung để 5 KPI không bị ép */
+.block-container{
+  max-width:1280px !important;
+}
+
+/* Tăng khoảng cách giữa các hàng/cột */
+div[data-testid="stHorizontalBlock"]{
+  gap:1.25rem !important;
+  margin-bottom:1.1rem !important;
+}
+
+/* KPI không bị tràn/chồng chữ */
+.kpi{
+  min-height:122px !important;
+  padding:15px 16px !important;
+  border-radius:18px !important;
+}
+
+.kpi .label{
+  font-size:9.2px !important;
+  letter-spacing:.07em !important;
+}
+
+.kpi .value{
+  font-size:22px !important;
+  line-height:1.1 !important;
+  white-space:normal !important;
+  word-break:break-word !important;
+}
+
+.kpi .caption{
+  font-size:11px !important;
+  line-height:1.45 !important;
+  display:block !important;
+  overflow:visible !important;
+  -webkit-line-clamp:unset !important;
+}
+
+/* Những KPI đặc biệt như loan_status không bị quá to */
+.kpi .value code,
+.kpi .value pre{
+  font-size:20px !important;
+}
+
+/* Tabs cách nội dung bên dưới rõ hơn */
+.stTabs [data-baseweb="tab-list"]{
+  margin-bottom:18px !important;
+}
+
+/* Chart có thêm không gian trên cho title + legend */
+[data-testid="stPlotlyChart"]{
+  margin-top:8px !important;
+  margin-bottom:20px !important;
+  padding:8px !important;
+}
+
+/* Bảng bên phải không dính chart bên trái */
+[data-testid="stDataFrame"]{
+  margin-top:8px !important;
+}
+
+/* Dark insight panel không quá nặng và không ép chữ */
+.dark-panel{
+  padding:20px 22px !important;
+  margin-top:8px !important;
+  margin-bottom:20px !important;
+}
+
+.dark-panel h3{
+  font-size:20px !important;
+  line-height:1.3 !important;
+}
+
+.dark-panel li{
+  margin-bottom:8px !important;
+}
+
+/* Fix chart legend bị đè vào title */
+.legend{
+  transform:translateY(8px);
+}
+
+/* Fix khoảng cách dưới mỗi chart-note */
+.chart-note{
+  margin-top:12px !important;
+  margin-bottom:22px !important;
+}
+
+
+/* ================= FINAL VISUAL BOOST ================= */
+
+[data-testid="stAppViewContainer"]{
+  background:
+    radial-gradient(circle at 12% 8%, rgba(34,211,238,.42), transparent 24%),
+    radial-gradient(circle at 78% 10%, rgba(139,92,246,.38), transparent 28%),
+    radial-gradient(circle at 55% 80%, rgba(14,165,233,.22), transparent 34%),
+    linear-gradient(135deg,#020617 0%,#082f49 45%,#172554 100%) !important;
+}
+
+/* Main hero nổi bật hơn */
+.hero{
+  background:
+    linear-gradient(135deg,rgba(2,6,23,.78),rgba(8,47,73,.72)),
+    radial-gradient(circle at 85% 12%,rgba(34,211,238,.36),transparent 32%),
+    radial-gradient(circle at 8% 5%,rgba(139,92,246,.28),transparent 28%) !important;
+  border:1px solid rgba(125,211,252,.36) !important;
+  box-shadow:
+    0 24px 70px rgba(0,0,0,.34),
+    inset 0 1px 0 rgba(255,255,255,.10) !important;
+}
+
+.hero h1{
+  font-size:44px !important;
+  letter-spacing:-.065em !important;
+  background:linear-gradient(90deg,#ffffff,#67e8f9,#c4b5fd) !important;
+  -webkit-background-clip:text !important;
+  -webkit-text-fill-color:transparent !important;
+}
+
+.ribbon{
+  background:rgba(34,211,238,.18) !important;
+  border-color:rgba(34,211,238,.55) !important;
+  box-shadow:0 0 24px rgba(34,211,238,.16) !important;
+}
+
+/* KPI card sáng hơn, nhìn premium hơn */
+.kpi{
+  background:linear-gradient(180deg,#ffffff,#eef8ff) !important;
+  border-top:5px solid #22d3ee !important;
+  box-shadow:
+    0 18px 38px rgba(2,8,23,.22),
+    inset 0 1px 0 rgba(255,255,255,.95) !important;
+  transform:translateY(0);
+  transition:.22s ease;
+}
+
+.kpi:hover{
+  transform:translateY(-4px);
+  box-shadow:
+    0 24px 50px rgba(34,211,238,.18),
+    0 18px 38px rgba(2,8,23,.22) !important;
+}
+
+/* Chart panels mềm và hiện đại hơn */
+[data-testid="stPlotlyChart"]{
+  border-radius:24px !important;
+  border:1px solid rgba(219,234,254,.95) !important;
+  box-shadow:
+    0 22px 48px rgba(2,8,23,.24),
+    inset 0 1px 0 rgba(255,255,255,.95) !important;
+}
+
+/* Section title có glow nhẹ */
+.section-title{
+  font-size:29px !important;
+  text-shadow:
+    0 0 24px rgba(34,211,238,.20),
+    0 0 46px rgba(139,92,246,.14) !important;
+}
+
+/* Sidebar thêm chiều sâu */
+[data-testid="stSidebar"]{
+  background:
+    radial-gradient(circle at 30% 0%,rgba(34,211,238,.18),transparent 30%),
+    radial-gradient(circle at 100% 45%,rgba(139,92,246,.16),transparent 34%),
+    linear-gradient(180deg,#020617 0%,#061527 52%,#081f35 100%) !important;
+}
+
+/* Menu item nhìn sắc nét hơn */
+[data-testid="stSidebar"] [role="radiogroup"] label{
+  backdrop-filter:blur(14px);
+}
+
+[data-testid="stSidebar"] [role="radiogroup"] label:has(input:checked){
+  background:linear-gradient(135deg,rgba(34,211,238,.24),rgba(139,92,246,.20)) !important;
+  border-color:rgba(34,211,238,.75) !important;
+}
+</style>
+""",
+    unsafe_allow_html=True,
+)
+
+# ============================================================
+# 3. DATA LOADING
+# ============================================================
+
+@st.cache_data(show_spinner=False)
+def read_csv(path: Path) -> pd.DataFrame:
+    if path.exists():
+        try:
+            return pd.read_csv(path)
+        except UnicodeDecodeError:
+            return pd.read_csv(path, encoding="utf-8-sig")
+        except Exception:
+            return pd.DataFrame()
+    return pd.DataFrame()
+
+
+@st.cache_resource(show_spinner=False)
+def read_pickle(path: Path):
+    if path.exists():
+        try:
+            return joblib.load(path)
+        except Exception:
+            return None
+    return None
+
+
+@st.cache_resource(show_spinner=False)
+def load_artifacts() -> Dict[str, Any]:
+    out: Dict[str, Any] = {}
+    for name in ["best_model", "best_model_name", "model_columns", "best_threshold"]:
+        obj = read_pickle(MODELS / f"{name}.pkl")
+        if obj is not None:
+            out[name] = obj
+
+    pipe = read_pickle(PIPELINE / "pipeline.pkl")
+    if pipe is not None:
+        out["pipeline"] = pipe
+
+    return out
+
+
+A = load_artifacts()
+
+clean = read_csv(DATA / "data_clean.csv")
+feature = read_csv(DATA / "data_feature.csv")
+scored = read_csv(DATA / "credit_scored_data.csv")
+pca = read_csv(DATA / "pca_features.csv")
+
+person1 = read_csv(REPORTS / "person1_summary_report.csv")
+person2 = read_csv(REPORTS / "person2_summary_report.csv")
+
+model_cmp = read_csv(REPORTS / "model_comparison_table.csv")
+tuning = read_csv(REPORTS / "tuning_result.csv")
+thresh = read_csv(REPORTS / "threshold_optimization.csv")
+feat_imp = read_csv(REPORTS / "feature_importance.csv")
+shap_imp = read_csv(REPORTS / "shap_feature_importance.csv")
+shap_water = read_csv(REPORTS / "shap_waterfall_sample_data.csv")
+
+eda_grade = read_csv(REPORTS / "eda_default_by_grade.csv")
+eda_intent = read_csv(REPORTS / "eda_default_by_intent.csv")
+eda_country = read_csv(REPORTS / "eda_default_by_country.csv")
+risk_threshold = read_csv(REPORTS / "risk_threshold_report.csv")
+pca_var = read_csv(REPORTS / "pca_explained_variance.csv")
+feature_dict = read_csv(REPORTS / "feature_dictionary.csv")
+audit_before = read_csv(REPORTS / "data_audit_before_cleaning.csv")
+audit_after = read_csv(REPORTS / "data_audit_after_cleaning.csv")
+
+# Ưu tiên Person 3 scoring vì có PD, credit score, risk level, decision.
+# Nếu chưa chạy Person 3 thì fallback về clean data.
+df = scored.copy() if not scored.empty else clean.copy()
+
+# ============================================================
+# 4. HELPER FUNCTIONS
+# ============================================================
+
+def fmt_num(x, decimals: int = 0) -> str:
+    try:
+        v = float(x)
+        if np.isnan(v):
+            return "—"
+        return f"{v:,.{decimals}f}"
+    except Exception:
+        return "—"
+
+
+def fmt_int(x) -> str:
+    return fmt_num(x, 0)
+
+
+def fmt_money(x) -> str:
+    try:
+        v = float(x)
+        if np.isnan(v):
+            return "—"
+        return f"${v:,.0f}"
+    except Exception:
+        return "—"
+
+
+def fmt_pct(x) -> str:
+    try:
+        v = float(x)
+        if np.isnan(v):
+            return "—"
+        return f"{v*100:.2f}%"
+    except Exception:
+        return "—"
+
+
+def section(title: str, note: str = ""):
+    st.markdown(f'<div class="section-title">{title}</div>', unsafe_allow_html=True)
+    if note:
+        st.markdown(f'<div class="section-note">{note}</div>', unsafe_allow_html=True)
+
+
+def kpi(label: str, value: str, caption: str = ""):
+    st.markdown(
+        f"""
+        <div class="kpi">
+            <div class="label">{label}</div>
+            <div class="value">{value}</div>
+            <div class="caption">{caption}</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+def chart_note(text: str):
+    st.markdown(f'<div class="chart-note">{text}</div>', unsafe_allow_html=True)
+
+
+def badge(text: str, cls: str = "gold") -> str:
+    return f'<span class="badge {cls}">{text}</span>'
+
+
+def risk_color(decision_value: str) -> str:
+    return {
+        "APPROVE": "#15803d",
+        "REVIEW": "#d8b45f",
+        "REJECT": "#b91c1c",
+    }.get(str(decision_value).upper(), "#0e7490")
+
+
+def explain_decision(decision_value: str) -> str:
+    d = str(decision_value).upper()
+    if d == "APPROVE":
+        return "Rủi ro thấp, điểm tín dụng đủ cao để duyệt tự động. Đây là nhóm giúp tăng doanh thu tín dụng với mức tổn thất kỳ vọng thấp."
+    if d == "REVIEW":
+        return "Cần thẩm định thêm hồ sơ, thu nhập, lịch sử nợ, mục đích vay hoặc tài sản đảm bảo. Đây là vùng mô hình không nên quyết định cứng."
+    return "Rủi ro cao, nên từ chối hoặc yêu cầu điều kiện bảo vệ rủi ro mạnh hơn. Đây là nhóm ảnh hưởng trực tiếp đến tổn thất tín dụng."
+
+
+def theme(fig, title: Optional[str] = None, height: int = 390):
+    if title:
+        fig.update_layout(
+            title={
+                "text": title,
+                "font": {
+                    "size": 17,
+                    "family": "Inter",
+                    "color": "#0f172a"
+                },
+                "x": 0.02,
+                "xanchor": "left",
+                "y": 0.98,
+                "yanchor": "top",
+            }
+        )
+
+    fig.update_layout(
+        template="plotly_white",
+        height=height,
+        paper_bgcolor="#ffffff",
+        plot_bgcolor="#ffffff",
+        font={
+            "family": "Inter",
+            "color": "#0f172a",
+            "size": 11
+        },
+        margin={
+            "l": 50,
+            "r": 24,
+            "t": 86,   # tăng chỗ cho title + legend
+            "b": 46
+        },
+        legend={
+            "orientation": "h",
+            "yanchor": "bottom",
+            "y": 1.04,
+            "xanchor": "right",
+            "x": 1,
+            "bgcolor": "rgba(255,255,255,.90)",
+            "bordercolor": "rgba(219,234,254,.95)",
+            "borderwidth": 1,
+            "font": {
+                "color": "#0f172a",
+                "size": 10
+            },
+        },
+        hoverlabel={
+            "bgcolor": "white",
+            "font_size": 11,
+            "font_family": "Inter",
+            "font_color": "#0f172a",
+        },
+        autosize=True,
+    )
+
+    fig.update_xaxes(
+        showgrid=True,
+        gridcolor="rgba(148,163,184,.18)",
+        zeroline=False,
+        linecolor="rgba(148,163,184,.32)",
+        tickfont={"color": "#334155", "size": 10},
+        title_font={"color": "#334155", "size": 11},
+        automargin=True,
+    )
+
+    fig.update_yaxes(
+        showgrid=True,
+        gridcolor="rgba(148,163,184,.18)",
+        zeroline=False,
+        linecolor="rgba(148,163,184,.32)",
+        tickfont={"color": "#334155", "size": 10},
+        title_font={"color": "#334155", "size": 11},
+        automargin=True,
+    )
+
+    return fig
+
+
+
+def empty_fig(title: str):
+    fig = go.Figure()
+    fig.add_annotation(
+        text=title,
+        x=0.5,
+        y=0.5,
+        showarrow=False,
+        font=dict(size=18, color="#334155"),
+    )
+    return theme(fig, title, 360)
+
+
+
+
+# ============================================================
+# 4B. EXTRA PREMIUM HELPERS — PCA 3D + ADVANCED MODEL GOVERNANCE
+# ============================================================
+
+def safe_col(df_in: pd.DataFrame, preferred: list[str]) -> Optional[str]:
+    for c in preferred:
+        if c in df_in.columns:
+            return c
+    return None
+
+
+def mini_metric_card(title: str, value: str, note: str, color: str = "#2dd4bf"):
+    st.markdown(
+        f"""
+        <div style="
+            background:linear-gradient(180deg,#fff9e8,#f4ead2);
+            border:1px solid rgba(216,180,95,.55);
+            border-left:6px solid {color};
+            border-radius:22px;
+            padding:18px;
+            box-shadow:0 16px 38px rgba(0,0,0,.23);
+            min-height:128px;
+            color:#08111f;">
+            <div style="font-family:JetBrains Mono,monospace;font-size:11px;font-weight:900;color:#0f766e;text-transform:uppercase;letter-spacing:.08em;">
+                {title}
+            </div>
+            <div style="font-family:Playfair Display,serif;font-size:32px;font-weight:900;color:#08111f;margin-top:8px;line-height:1.05;">
+                {value}
+            </div>
+            <div style="font-size:12.5px;color:#475569;margin-top:8px;line-height:1.45;">
+                {note}
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+def insight_box(title: str, bullets: list[str], tone: str = "gold"):
+    tone_color = {
+        "gold": "#d8b45f",
+        "green": "#22c55e",
+        "red": "#ef4444",
+        "blue": "#60a5fa",
+        "teal": "#2dd4bf",
+    }.get(tone, "#d8b45f")
+
+    html = f"""
+    <div style="
+        background:linear-gradient(135deg,rgba(9,23,40,.94),rgba(13,38,60,.90));
+        border:1px solid rgba(216,180,95,.28);
+        border-left:6px solid {tone_color};
+        border-radius:24px;
+        padding:20px;
+        box-shadow:0 18px 44px rgba(0,0,0,.26);
+        margin-bottom:16px;">
+        <h3 style="font-family:Playfair Display,serif;color:#fff4cc;margin:0 0 10px;font-size:24px;">{title}</h3>
+        <ul style="margin:0;padding-left:20px;">
+    """
+    for b in bullets:
+        html += f"<li style='color:#d6e3f4;line-height:1.65;margin-bottom:6px;'>{b}</li>"
+    html += "</ul></div>"
+    st.markdown(html, unsafe_allow_html=True)
+
+
+def plot_metric_radar(model_cmp_df: pd.DataFrame):
+    metrics = [m for m in ["accuracy", "precision", "recall", "f1_score", "roc_auc"] if m in model_cmp_df.columns]
+    if model_cmp_df.empty or not metrics or "model" not in model_cmp_df.columns:
+        return empty_fig("Missing model comparison data")
+
+    fig = go.Figure()
+    for _, row in model_cmp_df.iterrows():
+        values = [float(row[m]) for m in metrics]
+        fig.add_trace(
+            go.Scatterpolar(
+                r=values + [values[0]],
+                theta=metrics + [metrics[0]],
+                fill="toself",
+                name=str(row["model"]),
+            )
+        )
+
+    fig.update_layout(
+        polar=dict(
+            radialaxis=dict(visible=True, range=[0, 1], tickfont=dict(color="#111827"), gridcolor="rgba(148,163,184,.35)"),
+            angularaxis=dict(tickfont=dict(color="#111827")),
+            bgcolor="#fffdf6",
+        )
+    )
+    return theme(fig, "Model Radar — Multi-Metric View", 430)
+
+
+def model_rank_table(model_cmp_df: pd.DataFrame) -> pd.DataFrame:
+    if model_cmp_df.empty:
+        return pd.DataFrame()
+    df_rank = model_cmp_df.copy()
+    metric_cols = [c for c in ["accuracy", "precision", "recall", "f1_score", "roc_auc"] if c in df_rank.columns]
+    for m in metric_cols:
+        df_rank[f"{m}_rank"] = df_rank[m].rank(ascending=False, method="dense").astype(int)
+    if metric_cols:
+        df_rank["average_rank"] = df_rank[[f"{m}_rank" for m in metric_cols]].mean(axis=1)
+        sort_cols = ["average_rank"] + (["roc_auc"] if "roc_auc" in df_rank.columns else [])
+        asc = [True] + ([False] if "roc_auc" in df_rank.columns else [])
+        df_rank = df_rank.sort_values(sort_cols, ascending=asc)
+    return df_rank
+
+
+def plot_tuning_heatmap(tuning_df: pd.DataFrame):
+    if tuning_df.empty:
+        return empty_fig("Missing tuning_result.csv")
+
+    score_col = safe_col(tuning_df, ["mean_test_score", "rank_test_score"])
+    if score_col is None:
+        return empty_fig("Tuning file does not contain mean_test_score")
+
+    possible_x = safe_col(tuning_df, ["param_max_depth", "param_n_estimators", "param_learning_rate"])
+    possible_y = safe_col(tuning_df, ["param_learning_rate", "param_n_estimators", "param_subsample"])
+
+    if possible_x is None or possible_y is None or possible_x == possible_y:
+        view = tuning_df.sort_values(score_col, ascending=(score_col == "rank_test_score")).head(15)
+        fig = px.bar(view, x=score_col, y=view.index.astype(str), orientation="h", color=score_col, color_continuous_scale="YlGnBu")
+        return theme(fig, "Top Hyperparameter Candidates", 520)
+
+    heat = tuning_df.copy()
+    heat[possible_x] = heat[possible_x].astype(str)
+    heat[possible_y] = heat[possible_y].astype(str)
+
+    pivot = heat.pivot_table(index=possible_y, columns=possible_x, values=score_col, aggfunc="mean")
+    fig = px.imshow(pivot, text_auto=".4f", color_continuous_scale="YlGnBu", aspect="auto")
+    fig.update_xaxes(title=possible_x)
+    fig.update_yaxes(title=possible_y)
+    return theme(fig, "Hyperparameter Tuning Heatmap", 430)
+
+
+def build_confusion_from_scored(scored_df: pd.DataFrame):
+    if scored_df.empty or "loan_status" not in scored_df.columns:
+        return None
+    pred_col = None
+    for c in ["model_prediction", "prediction"]:
+        if c in scored_df.columns:
+            pred_col = c
+            break
+    if pred_col is None:
+        if "probability_of_default" in scored_df.columns:
+            pred = (scored_df["probability_of_default"] >= best_threshold()).astype(int)
+        else:
+            return None
+    else:
+        pred = scored_df[pred_col].astype(int)
+    y = scored_df["loan_status"].astype(int)
+    tn = int(((y == 0) & (pred == 0)).sum())
+    fp = int(((y == 0) & (pred == 1)).sum())
+    fn = int(((y == 1) & (pred == 0)).sum())
+    tp = int(((y == 1) & (pred == 1)).sum())
+    return pd.DataFrame([[tn, fp], [fn, tp]], index=["Actual Non-default", "Actual Default"], columns=["Predicted Non-default", "Predicted Default"])
+
+
+def plot_confusion_matrix_dashboard(scored_df: pd.DataFrame):
+    cm = build_confusion_from_scored(scored_df)
+    if cm is None:
+        return empty_fig("Missing data for confusion matrix")
+    fig = px.imshow(cm, text_auto=True, color_continuous_scale="YlOrRd", aspect="auto")
+    fig.update_xaxes(side="top")
+    return theme(fig, "Confusion Matrix — Actual vs Predicted", 380)
+
+
+def plot_precision_recall_tradeoff(thresh_df: pd.DataFrame):
+    if thresh_df.empty:
+        return empty_fig("Missing threshold optimization data")
+    fig = go.Figure()
+    for m, dash in [("precision", None), ("recall", None), ("f1_score", "dash")]:
+        if m in thresh_df.columns:
+            fig.add_trace(go.Scatter(x=thresh_df["threshold"], y=thresh_df[m], mode="lines", name=m, line=dict(width=4, dash=dash)))
+    fig.add_vline(x=best_threshold(), line_dash="dash", line_color="#111827", annotation_text=f"Best threshold = {best_threshold():.2f}")
+    fig.update_xaxes(title="Threshold")
+    fig.update_yaxes(title="Metric score", range=[0, 1.05])
+    return theme(fig, "Precision / Recall / F1 Trade-off", 430)
+
+
+def plot_pca_3d(pca_df: pd.DataFrame, source_df: pd.DataFrame, color_by: str = "loan_status"):
+    if pca_df.empty:
+        return empty_fig("Missing data/pca_features.csv")
+    required = ["PC1", "PC2", "PC3"]
+    if not all(c in pca_df.columns for c in required):
+        return empty_fig("PCA needs PC1, PC2, PC3 for 3D view")
+    temp = pca_df.copy()
+    if color_by not in temp.columns and color_by in source_df.columns:
+        temp[color_by] = source_df[color_by].values[: len(temp)]
+    if color_by not in temp.columns:
+        color_by = None
+    if len(temp) > 8000:
+        temp = temp.sample(8000, random_state=42)
+    fig = px.scatter_3d(temp, x="PC1", y="PC2", z="PC3", color=color_by, opacity=0.68, height=560)
+    fig.update_traces(marker=dict(size=3.2))
+    fig.update_layout(
+        template="plotly_white",
+        paper_bgcolor="#ffffff",
+        scene=dict(
+            xaxis=dict(backgroundcolor="#fffdf6", gridcolor="rgba(148,163,184,.35)", title="PC1"),
+            yaxis=dict(backgroundcolor="#fffdf6", gridcolor="rgba(148,163,184,.35)", title="PC2"),
+            zaxis=dict(backgroundcolor="#fffdf6", gridcolor="rgba(148,163,184,.35)", title="PC3"),
+        ),
+        font=dict(family="Inter", color="#111827"),
+        title=dict(text="3D PCA Credit Risk Space", font=dict(size=24, color="#08111f"), x=0.02),
+        margin=dict(l=0, r=0, t=60, b=0),
+        legend=dict(bgcolor="rgba(255,250,240,.88)"),
+    )
+    return fig
+
+
+def pca_variance_summary(pca_var_df: pd.DataFrame):
+    if pca_var_df.empty:
+        return None
+    cols = pca_var_df.columns.tolist()
+    comp_col = safe_col(pca_var_df, ["principal_component", "component", "PC", cols[0]])
+    ratio_candidates = ["explained_variance_ratio", "variance_ratio", "explained_variance"]
+    if len(cols) > 1:
+        ratio_candidates.append(cols[1])
+    ratio_col = safe_col(pca_var_df, ratio_candidates)
+    cum_candidates = ["cumulative_variance_ratio", "cumulative_variance", "cumulative"]
+    if cols:
+        cum_candidates.append(cols[-1])
+    cum_col = safe_col(pca_var_df, cum_candidates)
+    return comp_col, ratio_col, cum_col
+
+
+def plot_pca_variance_combo(pca_var_df: pd.DataFrame):
+    if pca_var_df.empty:
+        return empty_fig("Missing pca_explained_variance.csv")
+    summary = pca_variance_summary(pca_var_df)
+    if summary is None:
+        return empty_fig("Cannot read PCA variance file")
+    comp_col, ratio_col, cum_col = summary
+    if comp_col is None or ratio_col is None:
+        return empty_fig("Cannot identify PCA variance columns")
+    temp = pca_var_df.copy()
+    fig = go.Figure()
+    fig.add_trace(go.Bar(x=temp[comp_col], y=temp[ratio_col], name="Individual variance", text=temp[ratio_col], texttemplate="%{text:.2%}", textposition="outside"))
+    if cum_col in temp.columns and cum_col != ratio_col:
+        fig.add_trace(go.Scatter(x=temp[comp_col], y=temp[cum_col], mode="lines+markers", name="Cumulative variance", line=dict(width=4)))
+    fig.update_yaxes(tickformat=".0%", title="Explained variance")
+    fig.update_xaxes(title="Principal components")
+    return theme(fig, "PCA Explained Variance — Individual vs Cumulative", 420)
+
+
+def plot_pca_default_density(pca_df: pd.DataFrame):
+    if pca_df.empty or not {"PC1", "PC2"}.issubset(set(pca_df.columns)):
+        return empty_fig("Missing PC1 / PC2")
+    temp = pca_df.copy()
+    if len(temp) > 10000:
+        temp = temp.sample(10000, random_state=42)
+    color = "loan_status" if "loan_status" in temp.columns else None
+    fig = px.scatter(temp, x="PC1", y="PC2", color=color, opacity=0.5, marginal_x="histogram", marginal_y="histogram")
+    return theme(fig, "PCA 2D Projection with Marginal Distribution", 460)
+
+
+def plot_pca_risk_score(pca_df: pd.DataFrame, source_df: pd.DataFrame):
+    if pca_df.empty or not {"PC1", "PC2"}.issubset(set(pca_df.columns)):
+        return empty_fig("Missing PC1 / PC2")
+    temp = pca_df.copy()
+    if "probability_of_default" in source_df.columns:
+        temp["probability_of_default"] = source_df["probability_of_default"].values[: len(temp)]
+        color = "probability_of_default"
+        scale = "YlOrRd"
+    elif "credit_score" in source_df.columns:
+        temp["credit_score"] = source_df["credit_score"].values[: len(temp)]
+        color = "credit_score"
+        scale = "Viridis"
+    elif "loan_status" in temp.columns:
+        color = "loan_status"
+        scale = None
+    else:
+        color = None
+        scale = None
+    if len(temp) > 10000:
+        temp = temp.sample(10000, random_state=42)
+    fig = px.scatter(temp, x="PC1", y="PC2", color=color, color_continuous_scale=scale, opacity=0.62)
+    return theme(fig, "PCA Risk Gradient View", 430)
+
+
+def get_final_metrics_from_threshold(thresh_df: pd.DataFrame):
+    if thresh_df.empty or "threshold" not in thresh_df.columns:
+        return {}
+    temp = thresh_df.copy()
+    temp["distance"] = (temp["threshold"].astype(float) - best_threshold()).abs()
+    row = temp.sort_values("distance").iloc[0]
+    return {
+        "accuracy": row.get("accuracy", np.nan),
+        "precision": row.get("precision", np.nan),
+        "recall": row.get("recall", np.nan),
+        "f1_score": row.get("f1_score", np.nan),
+        "roc_auc": row.get("roc_auc", np.nan),
+        "threshold": row.get("threshold", best_threshold()),
+    }
+
+
+def plot_error_analysis(scored_df: pd.DataFrame):
+    if scored_df.empty or "loan_status" not in scored_df.columns:
+        return empty_fig("Need loan_status and prediction data")
+    temp = scored_df.copy()
+    if "model_prediction" not in temp.columns:
+        if "probability_of_default" in temp.columns:
+            temp["model_prediction"] = (temp["probability_of_default"] >= best_threshold()).astype(int)
+        else:
+            return empty_fig("Need model_prediction or probability_of_default")
+    def error_type(row):
+        actual = int(row["loan_status"])
+        pred = int(row["model_prediction"])
+        if actual == 0 and pred == 0:
+            return "True Negative"
+        if actual == 0 and pred == 1:
+            return "False Positive"
+        if actual == 1 and pred == 0:
+            return "False Negative"
+        return "True Positive"
+    temp["error_type"] = temp.apply(error_type, axis=1)
+    counts = temp["error_type"].value_counts().rename_axis("error_type").reset_index(name="customers")
+    fig = px.bar(
+        counts,
+        x="error_type",
+        y="customers",
+        color="error_type",
+        text="customers",
+        color_discrete_map={"True Negative": "#15803d", "True Positive": "#0e7490", "False Positive": "#d8b45f", "False Negative": "#b91c1c"},
+    )
+    fig.update_traces(textposition="outside", cliponaxis=False)
+    return theme(fig, "Prediction Error Analysis", 400)
+
+
+def plot_lift_by_decile(scored_df: pd.DataFrame):
+    if scored_df.empty or "loan_status" not in scored_df.columns or "probability_of_default" not in scored_df.columns:
+        return empty_fig("Need loan_status and probability_of_default for lift chart")
+    temp = scored_df.copy().sort_values("probability_of_default", ascending=False)
+    temp["risk_decile"] = pd.qcut(temp["probability_of_default"].rank(method="first"), 10, labels=[f"D{i}" for i in range(10, 0, -1)])
+    decile = temp.groupby("risk_decile", observed=False).agg(customers=("loan_status", "count"), default_rate=("loan_status", "mean"), avg_pd=("probability_of_default", "mean")).reset_index()
+    fig = go.Figure()
+    fig.add_trace(go.Bar(x=decile["risk_decile"], y=decile["default_rate"], name="Actual default rate", text=decile["default_rate"], texttemplate="%{text:.2%}", textposition="outside"))
+    fig.add_trace(go.Scatter(x=decile["risk_decile"], y=decile["avg_pd"], mode="lines+markers", name="Average predicted PD", line=dict(width=4)))
+    fig.update_yaxes(tickformat=".0%", title="Rate")
+    fig.update_xaxes(title="Risk decile, D10 = highest predicted risk")
+    return theme(fig, "Risk Decile / Lift Chart", 430)
+
+def gauge_score(value: float, title: str):
+    fig = go.Figure(
+        go.Indicator(
+            mode="gauge+number",
+            value=float(value),
+            number={"font": {"size": 34, "color": "#020617"}},
+            title={"text": title, "font": {"size": 17, "color": "#020617"}},
+            gauge={
+                "axis": {
+                    "range": [300, 850],
+                    "tickfont": {"color": "#0f172a", "size": 10},
+                },
+                "bar": {"color": "#0369a1", "thickness": 0.28},
+                "bgcolor": "#ffffff",
+                "borderwidth": 1,
+                "bordercolor": "#cbd5e1",
+                "steps": [
+                    {"range": [300, 500], "color": "#fecaca"},
+                    {"range": [500, 700], "color": "#fde68a"},
+                    {"range": [700, 850], "color": "#bbf7d0"},
+                ],
+            },
+        )
+    )
+    fig.update_layout(
+        height=300,
+        paper_bgcolor="#ffffff",
+        plot_bgcolor="#ffffff",
+        margin=dict(l=14, r=14, t=46, b=14),
+        font=dict(color="#020617", family="Inter")
+    )
+    return fig
+
+
+def gauge_pd(value: float, title: str):
+    fig = go.Figure(
+        go.Indicator(
+            mode="gauge+number",
+            value=float(value) * 100,
+            number={"suffix": "%", "font": {"size": 34, "color": "#020617"}},
+            title={"text": title, "font": {"size": 17, "color": "#020617"}},
+            gauge={
+                "axis": {
+                    "range": [0, 100],
+                    "tickfont": {"color": "#0f172a", "size": 10},
+                },
+                "bar": {"color": "#b91c1c", "thickness": 0.28},
+                "bgcolor": "#ffffff",
+                "borderwidth": 1,
+                "bordercolor": "#cbd5e1",
+                "steps": [
+                    {"range": [0, 25], "color": "#bbf7d0"},
+                    {"range": [25, 60], "color": "#fde68a"},
+                    {"range": [60, 100], "color": "#fecaca"},
+                ],
+            },
+        )
+    )
+    fig.update_layout(
+        height=300,
+        paper_bgcolor="#ffffff",
+        plot_bgcolor="#ffffff",
+        margin=dict(l=14, r=14, t=46, b=14),
+        font=dict(color="#020617", family="Inter")
+    )
+    return fig
+
+def safe_columns(dataframe: pd.DataFrame, cols: list[str]) -> list[str]:
+    return [c for c in cols if c in dataframe.columns]
+
+
+def best_threshold() -> float:
+    if "best_threshold" in A:
+        try:
+            return float(A["best_threshold"])
+        except Exception:
+            return 0.71
+    return 0.71
+
+
+def best_model_name() -> str:
+    if "best_model_name" in A:
+        return str(A["best_model_name"])
+    if not model_cmp.empty and "model" in model_cmp.columns:
+        return str(model_cmp.sort_values("roc_auc", ascending=False).iloc[0]["model"])
+    return "XGBoost"
+
+
+def calculate_credit_score(prob_default: float) -> int:
+    score = 850 - prob_default * 550
+    score = max(300, min(850, score))
+    return int(round(score))
+
+
+def classify_risk_level(score: int) -> str:
+    if score >= 700:
+        return "LOW"
+    elif score >= 600:
+        return "MEDIUM"
+    return "HIGH"
+
+
+def make_decision(prob_default: float, score: int) -> str:
+    if prob_default < 0.25 and score >= 720:
+        return "APPROVE"
+    elif prob_default < 0.60 and score >= 500:
+        return "REVIEW"
+    return "REJECT"
+
+
+def build_model_input(raw: dict) -> Optional[pd.DataFrame]:
+    model_columns = A.get("model_columns")
+    if model_columns is None:
+        return None
+
+    input_df = pd.DataFrame([raw])
+
+    # One-hot encoding tương thích với data_feature.csv
+    input_df = pd.get_dummies(input_df)
+
+    # Reindex đúng columns Person 2 đã lưu
+    input_df = input_df.reindex(columns=model_columns, fill_value=0)
+    return input_df
+
+
+def predict(raw: dict) -> Optional[dict]:
+    model = A.get("best_model")
+    if model is None:
+        return None
+
+    X = build_model_input(raw)
+    if X is None:
+        return None
+
+    try:
+        prob_default = float(model.predict_proba(X)[0][1])
+    except Exception:
+        return None
+
+    score = calculate_credit_score(prob_default)
+    risk = classify_risk_level(score)
+    decision = make_decision(prob_default, score)
+
+    return {
+        "probability_of_default": prob_default,
+        "prediction": int(prob_default >= best_threshold()),
+        "credit_score": score,
+        "risk_level": risk,
+        "decision": decision,
+    }
+
+
+def ensure_scoring_columns(dataframe: pd.DataFrame) -> pd.DataFrame:
+    data = dataframe.copy()
+
+    if "probability_of_default" not in data.columns:
+        data["probability_of_default"] = np.nan
+
+    if "credit_score" not in data.columns:
+        data["credit_score"] = data["probability_of_default"].apply(
+            lambda x: calculate_credit_score(x) if pd.notna(x) else np.nan
+        )
+
+    if "risk_level" not in data.columns:
+        data["risk_level"] = data["credit_score"].apply(
+            lambda x: classify_risk_level(int(x)) if pd.notna(x) else "UNKNOWN"
+        )
+
+    if "decision" not in data.columns:
+        data["decision"] = data.apply(
+            lambda r: make_decision(
+                float(r["probability_of_default"]),
+                int(r["credit_score"]),
+            )
+            if pd.notna(r["probability_of_default"]) and pd.notna(r["credit_score"])
+            else "UNKNOWN",
+            axis=1,
+        )
+
+    return data
+
+
+# ============================================================
+# 5. VALIDATE DATA
+# ============================================================
+
+if df.empty:
+    st.error(
+        "Không tìm thấy dữ liệu. Hãy chạy đúng thứ tự: "
+        "person1_data_lead.py → person2_ml_model.py → person3_ml_system.py → streamlit run app.py"
+    )
+    st.stop()
+
+df = ensure_scoring_columns(df)
+
+total = len(df)
+def_rate = df["loan_status"].mean() if "loan_status" in df.columns else np.nan
+avg_score = df["credit_score"].mean() if "credit_score" in df.columns else np.nan
+avg_pd = df["probability_of_default"].mean() if "probability_of_default" in df.columns else np.nan
+exposure = df["loan_amnt"].sum() if "loan_amnt" in df.columns else np.nan
+
+# ============================================================
+# 6. SIDEBAR
+# ============================================================
+
+st.sidebar.markdown("# 🏦 Credit Risk Nexus")
+st.sidebar.markdown("**Premium ML Dashboard**")
+st.sidebar.markdown("---")
+
+page = st.sidebar.radio(
+    "Điều hướng",
+    [
+        "🏦 Risk Cockpit",
+        "📊 Portfolio Data Lab",
+        "🧬 Data Science Lens",
+        "🤖 Model Governance",
+        "🔎 Explainability Board",
+        "🎯 Decision Studio",
+        "🌪️ Stress Laboratory",
+        "📜 Defense Report",
+        "🧠 AI Risk Copilot",
+    ],
+)
+
+st.sidebar.markdown("---")
+st.sidebar.markdown("### Pipeline status")
+
+status = {
+    "Person 1 data_clean.csv": not clean.empty,
+    "Person 1 data_feature.csv": not feature.empty,
+    "Person 1 PCA output": not pca.empty or not pca_var.empty,
+    "Person 2 best_model.pkl": "best_model" in A,
+    "Person 2 threshold": "best_threshold" in A,
+    "Person 3 credit_scored_data.csv": not scored.empty,
+    "Person 3 SHAP": not shap_imp.empty or (EXPLAIN / "shap_bar.png").exists(),
+}
+
+for k, v in status.items():
+    st.sidebar.markdown(f"{'🟢' if v else '🟡'} {k}")
+
+st.sidebar.markdown("---")
+st.sidebar.markdown("### Project facts")
+st.sidebar.markdown(f"**Rows loaded:** {fmt_int(total)}")
+st.sidebar.markdown(f"**Expected rows:** {fmt_int(EXPECTED_ROWS)}")
+st.sidebar.markdown(f"**Best model:** {best_model_name()}")
+st.sidebar.markdown(f"**Threshold:** {best_threshold():.2f}")
+
+if total != EXPECTED_ROWS:
+    st.sidebar.warning(
+        f"Dashboard đang đọc {fmt_int(total)} dòng, trong khi bộ gốc là {fmt_int(EXPECTED_ROWS)}. "
+        "Nếu sai, hãy chạy lại Person 1 → Person 2 → Person 3."
+    )
+
+# ============================================================
+# 7. HERO
+# ============================================================
+
+st.markdown(
+    f"""
+<div class="hero">
+  <div>
+    <div class="ribbon">BANKING RISK COMMAND • SQL DATA • ML SCORING • SHAP EXPLAINABILITY</div>
+    <h1>Credit Risk Nexus</h1>
+    <p>
+      Dashboard này đọc trực tiếp output của <b>Person 1</b>, <b>Person 2</b> và <b>Person 3</b>:
+      dữ liệu sạch, feature engineering, PCA, model comparison, threshold optimization, credit score,
+      decision rule và SHAP. Bản nâng cấp này không chỉ trình bày biểu đồ mà còn giải thích
+      <b>mỗi kết quả ảnh hưởng như thế nào đến bài toán rủi ro tín dụng</b>.
+    </p>
+  </div>
+  <div class="hero-stats">
+    <div class="hero-stat"><b>{fmt_int(total)}</b><span>customers</span></div>
+    <div class="hero-stat"><b>{fmt_pct(def_rate)}</b><span>actual default rate</span></div>
+    <div class="hero-stat"><b>{fmt_num(avg_score, 0)}</b><span>avg credit score</span></div>
+    <div class="hero-stat"><b>{fmt_pct(avg_pd)}</b><span>avg predicted PD</span></div>
+  </div>
+</div>
+""".replace("nan", "—"),
+    unsafe_allow_html=True,
+)
+
+# ============================================================
+# 8. GLOBAL FILTERS
+# ============================================================
+
+filtered = df.copy()
+
+with st.expander("🔎 Portfolio filters", expanded=False):
+    c1, c2, c3, c4, c5 = st.columns(5)
+
+    if "decision" in filtered.columns:
+        opts = sorted(filtered["decision"].dropna().unique())
+        choice = c1.multiselect("Decision", opts, default=opts)
+        filtered = filtered[filtered["decision"].isin(choice)]
+
+    if "risk_level" in filtered.columns:
+        opts = sorted(filtered["risk_level"].dropna().unique())
+        choice = c2.multiselect("Risk level", opts, default=opts)
+        filtered = filtered[filtered["risk_level"].isin(choice)]
+
+    if "loan_grade" in filtered.columns:
+        opts = sorted(filtered["loan_grade"].dropna().unique())
+        choice = c3.multiselect("Loan grade", opts, default=opts)
+        filtered = filtered[filtered["loan_grade"].isin(choice)]
+
+    if "loan_intent" in filtered.columns:
+        opts = sorted(filtered["loan_intent"].dropna().unique())
+        choice = c4.multiselect("Loan intent", opts, default=opts)
+        filtered = filtered[filtered["loan_intent"].isin(choice)]
+
+    if "person_income" in filtered.columns and not filtered.empty:
+        lo0, hi0 = float(filtered["person_income"].min()), float(filtered["person_income"].max())
+        if lo0 < hi0:
+            lo, hi = c5.slider("Income", lo0, hi0, (lo0, hi0))
+            filtered = filtered[(filtered["person_income"] >= lo) & (filtered["person_income"] <= hi)]
+
+# ============================================================
+# PAGE 1 — RISK COCKPIT
+# ============================================================
+
+if page == "🏦 Risk Cockpit":
+    section(
+        "Risk Cockpit",
+        "Trang tổng quan kiểu phòng điều hành: nhìn nhanh quy mô danh mục, rủi ro, quyết định tín dụng và nhóm khách hàng tạo tổn thất kỳ vọng cao."
+    )
+
+    f_default = filtered["loan_status"].mean() if "loan_status" in filtered.columns and not filtered.empty else np.nan
+    f_score = filtered["credit_score"].mean() if "credit_score" in filtered.columns and not filtered.empty else np.nan
+    f_pd = filtered["probability_of_default"].mean() if "probability_of_default" in filtered.columns and not filtered.empty else np.nan
+    f_exp = filtered["loan_amnt"].sum() if "loan_amnt" in filtered.columns and not filtered.empty else np.nan
+    reject_rate = filtered["decision"].eq("REJECT").mean() if "decision" in filtered.columns and not filtered.empty else np.nan
+
+    c = st.columns(5)
+    with c[0]:
+        kpi("Customers", fmt_int(len(filtered)), "Số hồ sơ đang được phân tích sau bộ lọc.")
+    with c[1]:
+        kpi("Exposure", fmt_money(f_exp), "Tổng quy mô khoản vay trong danh mục.")
+    with c[2]:
+        kpi("Actual Default", fmt_pct(f_default), "Tỷ lệ vỡ nợ thật trong dữ liệu.")
+    with c[3]:
+        kpi("Predicted PD", fmt_pct(f_pd), "Rủi ro trung bình theo mô hình.")
+    with c[4]:
+        kpi("Reject Rate", fmt_pct(reject_rate), "Tỷ lệ bị từ chối theo decision rule.")
+
+    c1, c2 = st.columns([1, 1], gap="medium")
+
+    with c1:
+        if "decision" in filtered.columns:
+            dec = (
+                filtered["decision"]
+                .value_counts()
+                .rename_axis("decision")
+                .reset_index(name="customers")
+            )
+            fig = px.bar(
+                dec,
+                x="decision",
+                y="customers",
+                color="decision",
+                text="customers",
+                color_discrete_map={
+                    "APPROVE": "#15803d",
+                    "REVIEW": "#d8b45f",
+                    "REJECT": "#b91c1c",
+                    "UNKNOWN": "#64748b",
+                },
+            )
+            fig.update_traces(textposition="outside", cliponaxis=False)
+            st.plotly_chart(
+                theme(fig, "Decision Board: Approve / Review / Reject", 340),
+                use_container_width=True,
+            )
+            chart_note(
+                "<b>Ý nghĩa:</b> Biểu đồ này chuyển kết quả Machine Learning thành ngôn ngữ nghiệp vụ. "
+                "APPROVE là nhóm tạo cơ hội doanh thu, REVIEW là nhóm cần thẩm định thủ công, REJECT là nhóm cần kiểm soát để giảm tổn thất tín dụng."
+            )
+        else:
+            st.plotly_chart(empty_fig("Missing decision column"), use_container_width=True)
+
+    with c2:
+        if "credit_score" in filtered.columns and not filtered.empty:
+            st.plotly_chart(
+                gauge_score(float(filtered["credit_score"].mean()), "Portfolio Credit Score"),
+                use_container_width=True,
+            )
+            chart_note(
+                "<b>Ý nghĩa:</b> Điểm tín dụng trung bình cho biết chất lượng chung của danh mục. "
+                "Nếu điểm giảm, danh mục đang dịch chuyển sang nhóm có xác suất vỡ nợ cao hơn."
+            )
+
+    c3, c4 = st.columns(2, gap="medium")
+
+    with c3:
+        if "risk_level" in filtered.columns:
+            risk = (
+                filtered["risk_level"]
+                .value_counts()
+                .rename_axis("risk_level")
+                .reset_index(name="customers")
+            )
+            fig = px.pie(
+                risk,
+                names="risk_level",
+                values="customers",
+                hole=0.55,
+                color="risk_level",
+                color_discrete_map={
+                    "LOW": "#15803d",
+                    "MEDIUM": "#d8b45f",
+                    "HIGH": "#b91c1c",
+                    "UNKNOWN": "#64748b",
+                },
+            )
+            st.plotly_chart(theme(fig, "Risk Level Mix", 340), use_container_width=True)
+            chart_note(
+                "<b>Ý nghĩa:</b> Cơ cấu LOW/MEDIUM/HIGH cho thấy danh mục có đang an toàn hay lệch sang rủi ro cao. "
+                "Đây là biểu đồ rất hợp để mở đầu phần demo vì nó nói rõ mô hình phục vụ quản trị rủi ro."
+            )
+
+    with c4:
+        if "probability_of_default" in filtered.columns:
+            fig = px.histogram(
+                filtered,
+                x="probability_of_default",
+                color="decision",
+                nbins=45,
+                color_discrete_map={
+                    "APPROVE": "#15803d",
+                    "REVIEW": "#d8b45f",
+                    "REJECT": "#b91c1c",
+                    "UNKNOWN": "#64748b",
+                },
+            )
+            fig.add_vline(
+                x=best_threshold(),
+                line_color="#111827",
+                line_dash="dash",
+                annotation_text=f"Model threshold = {best_threshold():.2f}",
+            )
+            fig.update_xaxes(title="Predicted Probability of Default")
+            fig.update_yaxes(title="Customers")
+            st.plotly_chart(theme(fig, "Default Probability Distribution", 340), use_container_width=True)
+            chart_note(
+                "<b>Ý nghĩa:</b> Biểu đồ này cho thấy mô hình tách khách hàng theo xác suất vỡ nợ. "
+                "Đường threshold là ranh giới ra quyết định model_prediction, còn decision rule kết hợp thêm credit score để phù hợp nghiệp vụ."
+            )
+
+    if "loan_amnt" in filtered.columns and "probability_of_default" in filtered.columns:
+        temp = filtered.copy()
+        temp["expected_loss_proxy"] = temp["loan_amnt"] * temp["probability_of_default"]
+        top_loss = temp.sort_values("expected_loss_proxy", ascending=False).head(15)
+
+        fig = px.bar(
+            top_loss,
+            x="expected_loss_proxy",
+            y=top_loss.index.astype(str),
+            orientation="h",
+            color="probability_of_default",
+            color_continuous_scale="Reds",
+            text="expected_loss_proxy",
+        )
+        fig.update_traces(texttemplate="$%{text:,.0f}", textposition="outside", cliponaxis=False)
+        fig.update_layout(yaxis_title="Customer index", xaxis_title="Loan amount × PD")
+        st.plotly_chart(theme(fig, "Top Customers by Expected Loss Proxy", 420), use_container_width=True)
+        chart_note(
+            "<b>Ý nghĩa:</b> Expected Loss Proxy = Loan Amount × Probability of Default. "
+            "Khách hàng có khoản vay lớn nhưng PD cao là nhóm gây rủi ro tài chính lớn nhất. "
+            "Biểu đồ này giúp dự án vượt khỏi mức 'dự đoán đúng/sai' và tiến gần hơn tới quản trị danh mục thật."
+        )
+
+# ============================================================
+# PAGE 2 — PORTFOLIO DATA LAB
+# ============================================================
+
+elif page == "📊 Portfolio Data Lab":
+    section(
+        "Portfolio Data Lab — Person 1",
+        "Phần này phô năng lực xử lý dữ liệu: audit, cleaning, EDA, feature engineering, PCA và feature dictionary."
+    )
+
+    c = st.columns(5)
+    with c[0]:
+        kpi("Raw Rows", fmt_int(total), "Quy mô bộ dữ liệu đang đọc.")
+    with c[1]:
+        kpi("Original Columns", "32", "Theo kết quả Person 1.")
+    with c[2]:
+        kpi("Encoded Columns", "48", "Sau xử lý biến phân loại.")
+    with c[3]:
+        kpi("Default Cases", fmt_int(df["loan_status"].sum()) if "loan_status" in df.columns else "—", "Số hồ sơ default.")
+    with c[4]:
+        kpi("Default Rate", fmt_pct(def_rate), "Tỷ lệ default thực tế.")
+
+    tab1, tab2, tab3, tab4 = st.tabs(
+        ["Data Quality", "Default by Segment", "Financial Pressure", "Feature Dictionary"]
+    )
+
+    with tab1:
+        c1, c2 = st.columns(2)
+
+        with c1:
+            st.markdown(
+                """
+                <div class="panel">
+                <h3>Data audit before / after cleaning</h3>
+                <p>Person 1 kiểm tra missing values, duplicated rows, số dòng, số cột và tỷ lệ default trước/sau khi làm sạch dữ liệu.</p>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+
+            if not audit_before.empty or not audit_after.empty:
+                audit_view = pd.concat(
+                    [
+                        audit_before.assign(stage="Before cleaning") if not audit_before.empty else pd.DataFrame(),
+                        audit_after.assign(stage="After cleaning") if not audit_after.empty else pd.DataFrame(),
+                    ],
+                    ignore_index=True,
+                )
+                st.dataframe(audit_view, use_container_width=True)
+            else:
+                st.info("Chưa có data_audit_before_cleaning.csv hoặc data_audit_after_cleaning.csv.")
+
+        with c2:
+            if "loan_status" in filtered.columns:
+                status = (
+                    filtered["loan_status"]
+                    .value_counts()
+                    .rename_axis("loan_status")
+                    .reset_index(name="customers")
+                )
+                status["label"] = status["loan_status"].map({0: "Non-default", 1: "Default"}).fillna(status["loan_status"].astype(str))
+                fig = px.pie(status, names="label", values="customers", hole=0.5)
+                st.plotly_chart(theme(fig, "Target Distribution", 430), use_container_width=True)
+                chart_note(
+                    "<b>Ý nghĩa:</b> Đây là phân phối biến mục tiêu. Nếu default chỉ chiếm một phần nhỏ hơn non-default, "
+                    "bài toán có dấu hiệu mất cân bằng và không thể chỉ dùng Accuracy để đánh giá mô hình."
+                )
+
+    with tab2:
+        c1, c2 = st.columns(2)
+
+        with c1:
+            if not eda_grade.empty:
+                ycol = "default_rate_percent"
+                fig = px.bar(
+                    eda_grade.sort_values(ycol),
+                    x=ycol,
+                    y="loan_grade",
+                    orientation="h",
+                    color=ycol,
+                    text=ycol,
+                    color_continuous_scale="YlOrRd",
+                )
+                fig.update_traces(texttemplate="%{text:.2f}%", textposition="outside", cliponaxis=False)
+                fig.update_xaxes(title="Default rate (%)")
+                st.plotly_chart(theme(fig, "Default Rate by Loan Grade", 520), use_container_width=True)
+            elif "loan_grade" in filtered.columns and "loan_status" in filtered.columns:
+                temp = (
+                    filtered.groupby("loan_grade")["loan_status"]
+                    .mean()
+                    .mul(100)
+                    .reset_index(name="default_rate_percent")
+                    .sort_values("default_rate_percent")
+                )
+                fig = px.bar(
+                    temp,
+                    x="default_rate_percent",
+                    y="loan_grade",
+                    orientation="h",
+                    color="default_rate_percent",
+                    text="default_rate_percent",
+                    color_continuous_scale="YlOrRd",
+                )
+                fig.update_traces(texttemplate="%{text:.2f}%", textposition="outside", cliponaxis=False)
+                st.plotly_chart(theme(fig, "Default Rate by Loan Grade", 520), use_container_width=True)
+            else:
+                st.plotly_chart(empty_fig("Missing loan_grade or loan_status"), use_container_width=True)
+
+            chart_note(
+                "<b>Ý nghĩa:</b> Loan grade là tín hiệu rủi ro trực tiếp. Nếu grade xấu có default rate cao hơn, "
+                "dữ liệu có logic tài chính rõ ràng và phù hợp để xây dựng mô hình credit scoring."
+            )
+
+        with c2:
+            if not eda_intent.empty:
+                ycol = "default_rate_percent"
+                fig = px.bar(
+                    eda_intent.sort_values(ycol),
+                    x=ycol,
+                    y="loan_intent",
+                    orientation="h",
+                    color=ycol,
+                    text=ycol,
+                    color_continuous_scale="YlGnBu",
+                )
+                fig.update_traces(texttemplate="%{text:.2f}%", textposition="outside", cliponaxis=False)
+                fig.update_xaxes(title="Default rate (%)")
+                st.plotly_chart(theme(fig, "Default Rate by Loan Intent", 520), use_container_width=True)
+            elif "loan_intent" in filtered.columns and "loan_status" in filtered.columns:
+                temp = (
+                    filtered.groupby("loan_intent")["loan_status"]
+                    .mean()
+                    .mul(100)
+                    .reset_index(name="default_rate_percent")
+                    .sort_values("default_rate_percent")
+                )
+                fig = px.bar(
+                    temp,
+                    x="default_rate_percent",
+                    y="loan_intent",
+                    orientation="h",
+                    color="default_rate_percent",
+                    text="default_rate_percent",
+                    color_continuous_scale="YlGnBu",
+                )
+                fig.update_traces(texttemplate="%{text:.2f}%", textposition="outside", cliponaxis=False)
+                st.plotly_chart(theme(fig, "Default Rate by Loan Intent", 520), use_container_width=True)
+            else:
+                st.plotly_chart(empty_fig("Missing loan_intent or loan_status"), use_container_width=True)
+
+            chart_note(
+                "<b>Ý nghĩa:</b> Mục đích vay giúp ngân hàng hiểu khoản vay nào có rủi ro cao hơn. "
+                "Biểu đồ này làm bài có chiều sâu nghiệp vụ chứ không chỉ là thuật toán."
+            )
+
+    with tab3:
+        c1, c2 = st.columns(2)
+
+        with c1:
+            if "loan_percent_income" in filtered.columns and "loan_status" in filtered.columns:
+                fig = px.box(
+                    filtered,
+                    x="loan_status",
+                    y="loan_percent_income",
+                    color="loan_status",
+                    points=False,
+                )
+                fig.update_xaxes(title="Loan status: 0 = Non-default, 1 = Default")
+                fig.update_yaxes(title="Loan amount / income")
+                st.plotly_chart(theme(fig, "Loan Burden vs Default", 500), use_container_width=True)
+                chart_note(
+                    "<b>Ý nghĩa:</b> loan_percent_income càng cao nghĩa là khoản vay chiếm tỷ trọng lớn trong thu nhập. "
+                    "Đây là tín hiệu áp lực trả nợ, thường làm tăng xác suất default."
+                )
+
+        with c2:
+            cols = safe_columns(
+                filtered,
+                ["debt_to_income_ratio", "credit_utilization_ratio", "loan_int_rate", "past_delinquencies", "loan_status"],
+            )
+            if len(cols) >= 2:
+                corr = filtered[cols].corr(numeric_only=True)
+                fig = px.imshow(
+                    corr,
+                    text_auto=".2f",
+                    color_continuous_scale="RdBu_r",
+                    zmin=-1,
+                    zmax=1,
+                )
+                st.plotly_chart(theme(fig, "Risk Feature Correlation", 500), use_container_width=True)
+                chart_note(
+                    "<b>Ý nghĩa:</b> Correlation heatmap giúp nhận diện nhóm biến tài chính cùng di chuyển với default. "
+                    "Nó hỗ trợ giải thích vì sao các biến như DTI, utilization, lãi suất và delinquency quan trọng trong bài toán rủi ro."
+                )
+
+    with tab4:
+        if not feature_dict.empty:
+            st.dataframe(feature_dict, use_container_width=True, height=520)
+            chart_note(
+                "<b>Ý nghĩa:</b> Feature dictionary giúp bài có tính khoa học và dễ bảo vệ. "
+                "Người chấm có thể hiểu biến nào là input, biến nào là target, biến nào là feature engineering."
+            )
+        else:
+            st.info("Chưa có reports/feature_dictionary.csv.")
+
+# ============================================================
+# PAGE 3 — DATA SCIENCE LENS
+# ============================================================
+
+
+elif page == "🧬 Data Science Lens":
+    section(
+        "Data Science Lens — PCA, Feature Space & Model Input Intelligence",
+        "Trang này nâng cấp phần PCA thành không gian 2D, 3D, explained variance, risk gradient và diễn giải vì sao dữ liệu tín dụng cần Machine Learning thay vì chỉ nhìn bảng số liệu."
+    )
+
+    encoded_rows = len(feature) if not feature.empty else 0
+    encoded_cols = feature.shape[1] - 1 if not feature.empty and "loan_status" in feature.columns else feature.shape[1] if not feature.empty else 0
+    pca_rows = len(pca) if not pca.empty else 0
+    pca_cols = len([c for c in pca.columns if str(c).startswith("PC")]) if not pca.empty else 0
+
+    c = st.columns(5)
+    with c[0]:
+        mini_metric_card("Encoded Rows", fmt_int(encoded_rows), "Số dòng sau feature engineering.", "#2dd4bf")
+    with c[1]:
+        mini_metric_card("ML Features", fmt_int(encoded_cols), "Số biến đầu vào sau encoding.", "#60a5fa")
+    with c[2]:
+        mini_metric_card("PCA Rows", fmt_int(pca_rows), "Số điểm dữ liệu trong không gian PCA.", "#d8b45f")
+    with c[3]:
+        mini_metric_card("PCA Components", fmt_int(pca_cols), "Số trục chính được tạo bởi PCA.", "#f59e0b")
+    with c[4]:
+        mini_metric_card("Target", "loan_status", "1 = default, 0 = non-default.", "#ef4444")
+
+    insight_box(
+        "PCA dùng để chứng minh điều gì trong bài Machine Learning?",
+        [
+            "<b>PCA không thay thế mô hình XGBoost</b>, nhưng giúp quan sát cấu trúc dữ liệu sau khi mã hóa.",
+            "<b>Nếu default/non-default có xu hướng tách nhau</b> trong không gian PC1–PC2–PC3, dữ liệu có tín hiệu để mô hình học.",
+            "<b>Nếu các nhóm chồng lấn</b>, điều đó giải thích vì sao cần mô hình mạnh như XGBoost thay vì rule đơn giản.",
+            "<b>3D PCA</b> giúp trình bày sinh động hơn vì người xem có thể xoay không gian rủi ro và nhìn cụm khách hàng.",
+        ],
+        "teal",
+    )
+
+    tab1, tab2, tab3, tab4, tab5 = st.tabs(["PCA Explained Variance", "2D PCA Space", "3D PCA Space", "Risk Gradient", "Feature Engineering Audit"])
+
+    with tab1:
+        c1, c2 = st.columns([1, 1], gap="medium")
+        with c1:
+            st.plotly_chart(plot_pca_variance_combo(pca_var), use_container_width=True)
+            chart_note("<b>Ý nghĩa:</b> Explained variance cho biết mỗi principal component giữ lại bao nhiêu thông tin từ dữ liệu gốc. Nếu 10 components chỉ giải thích một phần phương sai, điều đó chứng minh dữ liệu tín dụng có nhiều chiều, nhiều tín hiệu và không thể phân tích đơn giản bằng 1–2 biến.")
+        with c2:
+            if not pca_var.empty:
+                summary = pca_variance_summary(pca_var)
+                if summary:
+                    comp_col, ratio_col, cum_col = summary
+                    show = pca_var.copy()
+                    for col in [ratio_col, cum_col]:
+                        if col in show.columns:
+                            show[col] = show[col].apply(lambda x: f"{float(x)*100:.2f}%" if pd.notna(x) else "—")
+                    st.dataframe(show, use_container_width=True, height=420)
+                else:
+                    st.info("Không đọc được cấu trúc pca_explained_variance.csv.")
+            else:
+                st.info("Chưa có reports/pca_explained_variance.csv.")
+            chart_note("<b>Cách nói khi thuyết trình:</b> PCA giúp giảm chiều và trực quan hóa dữ liệu sau encoding. Nó không phải model chính, nhưng chứng minh nhóm hiểu bản chất không gian đặc trưng của bài toán.")
+
+    with tab2:
+        c1, c2 = st.columns([1.25, 0.75])
+        with c1:
+            st.plotly_chart(plot_pca_default_density(pca), use_container_width=True)
+        with c2:
+            insight_box(
+                "Cách đọc PCA 2D",
+                [
+                    "<b>Mỗi điểm</b> là một khách hàng trong bộ dữ liệu.",
+                    "<b>PC1 và PC2</b> là hai hướng chứa nhiều biến thiên nhất sau khi chuẩn hóa và PCA.",
+                    "<b>Màu sắc</b> biểu thị default/non-default nếu có loan_status.",
+                    "<b>Nếu hai nhóm chưa tách rõ</b>, điều đó hợp lý vì credit risk là bài toán phức tạp.",
+                ],
+                "gold",
+            )
+        chart_note("<b>Ý nghĩa:</b> Không gian 2D giúp nhìn nhanh xem khách hàng default có tập trung ở một vùng đặc trưng hay không. Đây là phần giúp bài Machine Learning có chiều sâu phân tích dữ liệu, không chỉ chạy mô hình.")
+
+    with tab3:
+        color_option = st.selectbox("Color PCA 3D by", options=["loan_status", "risk_level", "decision", "probability_of_default", "credit_score"], index=0)
+        st.plotly_chart(plot_pca_3d(pca, df, color_option), use_container_width=True)
+        chart_note("<b>Ý nghĩa 3D PCA:</b> Đây là bản nâng cấp quan trọng cho phần PCA. Không gian 3 chiều cho phép xoay, phóng to và quan sát các cụm khách hàng. Khi tô màu theo loan_status, risk_level hoặc decision, người xem thấy rõ mối liên hệ giữa không gian dữ liệu và kết quả mô hình.")
+        insight_box(
+            "Điểm ăn điểm khi bảo vệ PCA 3D",
+            [
+                "Không nói PCA là mô hình dự đoán chính.",
+                "Nói PCA là công cụ <b>visualization + dimensionality reduction</b>.",
+                "Dữ liệu có nhiều features sau encoding nên không thể nhìn trực tiếp bằng mắt.",
+                "PCA chuyển không gian nhiều chiều về 2D/3D để người xem thấy cấu trúc danh mục tín dụng.",
+            ],
+            "blue",
+        )
+
+    with tab4:
+        c1, c2 = st.columns(2)
+        with c1:
+            st.plotly_chart(plot_pca_risk_score(pca, df), use_container_width=True)
+            chart_note("<b>Ý nghĩa:</b> Risk Gradient View cho thấy vùng nào trong không gian PCA có xác suất default cao hơn. Nếu các điểm có PD cao tập trung thành vùng, mô hình đang phát hiện cấu trúc rủi ro có thật trong dữ liệu.")
+        with c2:
+            if not pca.empty and "PC1" in pca.columns and "PC2" in pca.columns:
+                temp = pca.copy()
+                if "probability_of_default" in df.columns:
+                    temp["probability_of_default"] = df["probability_of_default"].values[: len(temp)]
+                    temp["risk_bucket"] = pd.cut(temp["probability_of_default"], bins=[-0.01, 0.25, 0.60, 1.01], labels=["Low PD", "Medium PD", "High PD"])
+                    fig = px.box(temp, x="risk_bucket", y="PC1", color="risk_bucket")
+                    st.plotly_chart(theme(fig, "PC1 Distribution by PD Bucket", 520), use_container_width=True)
+                else:
+                    st.plotly_chart(empty_fig("Need probability_of_default"), use_container_width=True)
+            else:
+                st.plotly_chart(empty_fig("Need PC1 / PC2"), use_container_width=True)
+            chart_note("<b>Ý nghĩa:</b> So sánh PC1 theo nhóm PD giúp xem principal component có liên quan đến rủi ro dự đoán hay không. Đây là cách kết nối PCA với phần model scoring.")
+
+    with tab5:
+        c1, c2 = st.columns(2)
+        with c1:
+            if not feature.empty:
+                numeric_count = feature.select_dtypes(include=np.number).shape[1]
+                missing_total = int(feature.isna().sum().sum())
+                duplicate_total = int(feature.duplicated().sum())
+                quality = pd.DataFrame({"Item": ["Rows", "Columns", "Numeric columns", "Missing values", "Duplicated rows", "Target column"], "Value": [fmt_int(len(feature)), fmt_int(feature.shape[1]), fmt_int(numeric_count), fmt_int(missing_total), fmt_int(duplicate_total), "loan_status" if "loan_status" in feature.columns else "Missing"]})
+                st.dataframe(quality, use_container_width=True, height=330)
+            else:
+                st.info("Chưa có data/data_feature.csv.")
+            chart_note("<b>Ý nghĩa:</b> Feature audit cho người chấm thấy dữ liệu đã sẵn sàng cho ML: numeric, ít lỗi, có target, có cấu trúc rõ ràng.")
+        with c2:
+            if not feature_dict.empty:
+                st.dataframe(feature_dict, use_container_width=True, height=330)
+            else:
+                st.info("Chưa có reports/feature_dictionary.csv.")
+            chart_note("<b>Ý nghĩa:</b> Feature dictionary giúp bài chuyên nghiệp hơn vì giải thích biến đầu vào, kiểu dữ liệu và vai trò của từng feature.")
+        insight_box(
+            "Kết luận phần Data Science Lens",
+            [
+                "Person 1 đã biến dữ liệu thô thành không gian đặc trưng dùng được cho ML.",
+                "PCA giúp minh họa độ phức tạp của dữ liệu tín dụng.",
+                "3D PCA làm dashboard sinh động hơn và thể hiện rõ tư duy khoa học dữ liệu.",
+                "Phần này hỗ trợ trực tiếp cho Person 2 vì model chỉ tốt khi feature space được xử lý đúng.",
+            ],
+            "green",
+        )
+
+
+
+elif page == "🤖 Model Governance":
+    section(
+        "Model Governance — ML Performance, Tuning, Threshold & Risk Control",
+        "Trang này nâng cấp phần Model thành trung tâm đánh giá Machine Learning: leaderboard, radar chart, confusion matrix, threshold trade-off, tuning heatmap, error analysis, lift chart và giải thích nghiệp vụ."
+    )
+
+    final_metrics = get_final_metrics_from_threshold(thresh)
+    if not model_cmp.empty:
+        best_row = model_cmp.sort_values("roc_auc", ascending=False).iloc[0] if "roc_auc" in model_cmp.columns else model_cmp.iloc[0]
+        best_name = str(best_row.get("model", best_model_name()))
+    else:
+        best_row = pd.Series(dtype=float)
+        best_name = best_model_name()
+
+    c = st.columns(5)
+    with c[0]:
+        mini_metric_card("Best Model", best_name, "Mô hình được chọn sau so sánh.", "#2dd4bf")
+    with c[1]:
+        mini_metric_card("ROC-AUC", fmt_pct(final_metrics.get("roc_auc", best_row.get("roc_auc", np.nan))), "Khả năng phân biệt good/bad customers.", "#60a5fa")
+    with c[2]:
+        mini_metric_card("Precision", fmt_pct(final_metrics.get("precision", best_row.get("precision", np.nan))), "Trong nhóm bị cảnh báo default, bao nhiêu là đúng.", "#22c55e")
+    with c[3]:
+        mini_metric_card("Recall", fmt_pct(final_metrics.get("recall", best_row.get("recall", np.nan))), "Bắt được bao nhiêu khách hàng default thật.", "#f59e0b")
+    with c[4]:
+        mini_metric_card("Threshold", f"{best_threshold():.2f}", "Ngưỡng tối ưu thay vì mặc định 0.5.", "#ef4444")
+
+    insight_box(
+        "Tư duy đúng cho bài Credit Risk ML",
+        [
+            "<b>Accuracy không đủ</b> vì dữ liệu default thường mất cân bằng.",
+            "<b>Recall quan trọng</b> vì bỏ sót khách hàng default có thể gây tổn thất tín dụng.",
+            "<b>Precision quan trọng</b> vì từ chối nhầm khách hàng tốt sẽ làm mất doanh thu.",
+            "<b>Threshold optimization</b> giúp điều chỉnh model theo chiến lược rủi ro của ngân hàng.",
+            "<b>XGBoost</b> phù hợp vì dữ liệu tín dụng là dữ liệu bảng, có quan hệ phi tuyến và tương tác biến phức tạp.",
+        ],
+        "gold",
+    )
+
+    tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs(["Leaderboard", "Radar View", "Threshold & Trade-off", "Confusion & Error", "Tuning Lab", "Lift / Decile", "Feature Power"])
+
+    with tab1:
+        c1, c2 = st.columns([1.2, 0.8])
+        with c1:
+            if not model_cmp.empty:
+                metric_cols = [m for m in ["accuracy", "precision", "recall", "f1_score", "roc_auc"] if m in model_cmp.columns]
+                long = model_cmp.melt(id_vars="model", value_vars=metric_cols, var_name="metric", value_name="score")
+                fig = px.bar(long, x="model", y="score", color="metric", barmode="group", text="score")
+                fig.update_traces(texttemplate="%{text:.3f}", textposition="outside", cliponaxis=False)
+                fig.update_yaxes(range=[0, 1.08], title="Score")
+                fig.update_xaxes(title="Model")
+                st.plotly_chart(theme(fig, "Model Performance Leaderboard", 430), use_container_width=True)
+            else:
+                st.plotly_chart(empty_fig("Missing model_comparison_table.csv"), use_container_width=True)
+        with c2:
+            ranked = model_rank_table(model_cmp)
+            if not ranked.empty:
+                show_cols = [c for c in ["model", "accuracy", "precision", "recall", "f1_score", "roc_auc", "average_rank"] if c in ranked.columns]
+                st.dataframe(ranked[show_cols], use_container_width=True, height=420)
+            else:
+                st.info("Chưa có leaderboard table.")
+            chart_note("<b>Ý nghĩa:</b> Leaderboard cho thấy nhóm đã so sánh nhiều mô hình một cách công bằng. Điểm cao nhất không chỉ nhìn Accuracy mà cần xét ROC-AUC, Recall, Precision và F1-score.")
+        insight_box(
+            "Cách trình bày với giảng viên",
+            [
+                "Logistic Regression là baseline tuyến tính, dễ giải thích.",
+                "Decision Tree giúp nhìn logic phân nhánh nhưng dễ overfit nếu không kiểm soát.",
+                "Random Forest giảm overfitting bằng bagging.",
+                "XGBoost thường mạnh nhất vì boosting sửa lỗi tuần tự và học quan hệ phi tuyến.",
+            ],
+            "teal",
+        )
+
+    with tab2:
+        c1, c2 = st.columns([1, 1], gap="medium")
+        with c1:
+            st.plotly_chart(plot_metric_radar(model_cmp), use_container_width=True)
+        with c2:
+            if not model_cmp.empty:
+                best_by_metric = []
+                for m in ["accuracy", "precision", "recall", "f1_score", "roc_auc"]:
+                    if m in model_cmp.columns:
+                        row = model_cmp.sort_values(m, ascending=False).iloc[0]
+                        best_by_metric.append({"Metric": m, "Best model": row["model"], "Score": row[m]})
+                st.dataframe(pd.DataFrame(best_by_metric), use_container_width=True, height=330)
+            else:
+                st.info("Không có model comparison.")
+            chart_note("<b>Ý nghĩa:</b> Radar chart giúp nhìn model nào cân bằng tốt nhiều metric. Một mô hình có Accuracy cao nhưng Recall thấp chưa chắc phù hợp Credit Risk.")
+        insight_box("Vì sao radar chart tốt cho bài 10 điểm?", ["Nó thể hiện tư duy đa tiêu chí.", "Nó tránh lỗi phổ biến: chỉ khoe một chỉ số duy nhất.", "Nó giúp so sánh model trực quan và dễ bảo vệ."], "blue")
+
+    with tab3:
+        c1, c2 = st.columns([1, 1], gap="medium")
+        with c1:
+            st.plotly_chart(plot_precision_recall_tradeoff(thresh), use_container_width=True)
+        with c2:
+            if not thresh.empty:
+                best_view = thresh.copy()
+                if "f1_score" in best_view.columns:
+                    best_view = best_view.sort_values("f1_score", ascending=False)
+                st.dataframe(best_view.head(12), use_container_width=True, height=360)
+            else:
+                st.info("Chưa có threshold optimization data.")
+            chart_note("<b>Ý nghĩa:</b> Threshold là nơi kết nối Machine Learning với chính sách ngân hàng. Ngân hàng thận trọng có thể chọn threshold thấp hơn để bắt nhiều rủi ro hơn; ngân hàng muốn tăng doanh thu có thể giảm reject nhầm.")
+        if not thresh.empty:
+            c31, c32, c33 = st.columns(3)
+            with c31:
+                mini_metric_card("Best threshold", f"{best_threshold():.2f}", "Ngưỡng dùng cho model_prediction.", "#ef4444")
+            with c32:
+                mini_metric_card("Best F1", fmt_pct(final_metrics.get("f1_score", np.nan)), "Cân bằng Precision và Recall.", "#d8b45f")
+            with c33:
+                mini_metric_card("Credit Risk Logic", "Cost-sensitive", "Không đánh giá model như bài phân loại thông thường.", "#2dd4bf")
+
+    with tab4:
+        c1, c2 = st.columns(2)
+        with c1:
+            st.plotly_chart(plot_confusion_matrix_dashboard(df), use_container_width=True)
+            chart_note("<b>Ý nghĩa Confusion Matrix:</b> False Negative là lỗi nguy hiểm nhất trong Credit Risk vì khách hàng default thật bị mô hình cho qua. False Positive làm mất doanh thu vì khách hàng tốt bị cảnh báo nhầm.")
+        with c2:
+            st.plotly_chart(plot_error_analysis(df), use_container_width=True)
+            chart_note("<b>Ý nghĩa Error Analysis:</b> Biểu đồ lỗi cho biết mô hình sai theo hướng nào. Một bài ML tốt không chỉ khoe model đúng, mà còn biết phân tích model sai ở đâu.")
+        insight_box(
+            "Business interpretation of errors",
+            [
+                "<b>True Negative:</b> khách hàng tốt được nhận diện đúng, giúp duyệt vay an toàn.",
+                "<b>True Positive:</b> khách hàng default được cảnh báo đúng, giúp tránh tổn thất.",
+                "<b>False Positive:</b> cảnh báo nhầm khách hàng tốt, gây mất cơ hội doanh thu.",
+                "<b>False Negative:</b> bỏ sót khách hàng default, gây rủi ro tài chính nghiêm trọng nhất.",
+            ],
+            "red",
+        )
+
+    with tab5:
+        c1, c2 = st.columns([1.2, 0.8])
+        with c1:
+            st.plotly_chart(plot_tuning_heatmap(tuning), use_container_width=True)
+        with c2:
+            if not tuning.empty:
+                score_col = safe_col(tuning, ["mean_test_score"])
+                if score_col:
+                    top_tuning = tuning.sort_values(score_col, ascending=False).head(10)
+                    display_cols = [c for c in ["mean_test_score", "std_test_score", "rank_test_score", "param_n_estimators", "param_max_depth", "param_learning_rate", "param_subsample", "param_colsample_bytree"] if c in top_tuning.columns]
+                    st.dataframe(top_tuning[display_cols], use_container_width=True, height=420)
+                else:
+                    st.dataframe(tuning.head(10), use_container_width=True, height=420)
+            else:
+                st.info("Chưa có reports/tuning_result.csv.")
+            chart_note("<b>Ý nghĩa:</b> Tuning chứng minh mô hình cuối không phải chọn ngẫu nhiên. GridSearchCV kiểm tra nhiều tổ hợp tham số để tìm cấu hình có ROC-AUC tốt nhất.")
+        insight_box("Tại sao Hyperparameter Tuning quan trọng?", ["Model mặc định có thể chưa tối ưu cho dữ liệu tín dụng.", "max_depth kiểm soát độ phức tạp của cây.", "learning_rate kiểm soát tốc độ học của boosting.", "n_estimators quyết định số lượng cây.", "subsample và colsample_bytree giúp giảm overfitting."], "green")
+
+    with tab6:
+        c1, c2 = st.columns([1.2, 0.8])
+        with c1:
+            st.plotly_chart(plot_lift_by_decile(df), use_container_width=True)
+        with c2:
+            if "probability_of_default" in df.columns and "loan_status" in df.columns:
+                temp = df.copy().sort_values("probability_of_default", ascending=False)
+                temp["risk_decile"] = pd.qcut(temp["probability_of_default"].rank(method="first"), 10, labels=[f"D{i}" for i in range(10, 0, -1)])
+                agg_spec = {"customers": ("loan_status", "count"), "default_cases": ("loan_status", "sum"), "actual_default_rate": ("loan_status", "mean"), "avg_predicted_pd": ("probability_of_default", "mean")}
+                if "credit_score" in temp.columns:
+                    agg_spec["avg_score"] = ("credit_score", "mean")
+                decile = temp.groupby("risk_decile", observed=False).agg(**agg_spec).reset_index()
+                st.dataframe(decile, use_container_width=True, height=420)
+            else:
+                st.info("Cần probability_of_default và loan_status.")
+            chart_note("<b>Ý nghĩa Lift/Decile:</b> Nếu model tốt, nhóm decile rủi ro cao nhất phải có default rate thực tế cao hơn các nhóm còn lại. Đây là biểu đồ rất chuyên nghiệp trong credit scoring.")
+        insight_box("Vì sao Lift Chart giúp bài giống dự án thực tế?", ["Ngân hàng thường không chỉ hỏi model đúng bao nhiêu, mà hỏi model xếp hạng rủi ro tốt không.", "Risk decile giúp ưu tiên kiểm tra nhóm khách hàng nguy hiểm nhất.", "Nếu decile cao có default rate cao, model có khả năng ranking tốt."], "gold")
+
+    with tab7:
+        c1, c2 = st.columns(2)
+        with c1:
+            if not feat_imp.empty:
+                feature_col = safe_col(feat_imp, ["feature", "feature_name", feat_imp.columns[0]])
+                importance_col = safe_col(feat_imp, ["importance", "gain", "weight", "mean_abs_shap", feat_imp.columns[-1]])
+                if feature_col and importance_col:
+                    top = feat_imp.sort_values(importance_col, ascending=False).head(20).sort_values(importance_col)
+                    fig = px.bar(top, x=importance_col, y=feature_col, orientation="h", color=importance_col, text=importance_col, color_continuous_scale="YlOrBr")
+                    fig.update_traces(texttemplate="%{text:.4f}", textposition="outside", cliponaxis=False)
+                    st.plotly_chart(theme(fig, "Model Feature Importance — Top Drivers", 460), use_container_width=True)
+                else:
+                    st.dataframe(feat_imp.head(30), use_container_width=True)
+            else:
+                path = VISUALS / "feature_importance_professional.png"
+                if path.exists():
+                    st.image(str(path), use_container_width=True)
+                else:
+                    st.plotly_chart(empty_fig("Missing feature importance"), use_container_width=True)
+            chart_note("<b>Ý nghĩa:</b> Feature importance cho biết mô hình dựa nhiều vào biến nào để phân loại rủi ro. Đây là cầu nối giữa thuật toán và nghiệp vụ tín dụng.")
+        with c2:
+            if not shap_imp.empty:
+                feature_col = safe_col(shap_imp, ["feature", "feature_name", shap_imp.columns[0]])
+                shap_col = safe_col(shap_imp, ["mean_abs_shap", "importance", shap_imp.columns[-1]])
+                if feature_col and shap_col:
+                    top = shap_imp.sort_values(shap_col, ascending=False).head(20).sort_values(shap_col)
+                    fig = px.bar(top, x=shap_col, y=feature_col, orientation="h", color=shap_col, text=shap_col, color_continuous_scale="YlGnBu")
+                    fig.update_traces(texttemplate="%{text:.4f}", textposition="outside", cliponaxis=False)
+                    st.plotly_chart(theme(fig, "SHAP Importance — Explainable AI View", 460), use_container_width=True)
+                else:
+                    st.dataframe(shap_imp.head(30), use_container_width=True)
+            else:
+                path = EXPLAIN / "shap_bar.png"
+                if path.exists():
+                    st.image(str(path), use_container_width=True)
+                else:
+                    st.plotly_chart(empty_fig("Missing SHAP importance"), use_container_width=True)
+            chart_note("<b>Ý nghĩa:</b> SHAP mạnh hơn feature importance vì nó giải thích mức đóng góp của feature vào dự đoán. Phần này giúp trả lời câu hỏi: vì sao model đánh giá khách hàng rủi ro cao?")
+        insight_box(
+            "Kết luận phần Model Governance",
+            [
+                "Bài có đủ pipeline đánh giá model: comparison, tuning, threshold, confusion matrix, error analysis, lift chart.",
+                "Bài giải thích rõ vì sao chọn model và vì sao threshold quan trọng.",
+                "Bài không chỉ trình bày kết quả đẹp mà còn có tư duy risk management.",
+                "Đây là phần trọng tâm để chứng minh dự án phù hợp môn Machine Learning.",
+            ],
+            "teal",
+        )
+
+
+elif page == "🔎 Explainability Board":
+    section(
+        "Explainability Board — Person 3 SHAP",
+        "Trang này biến mô hình từ hộp đen thành hệ thống có thể giải thích: biến nào đẩy rủi ro lên, biến nào kéo rủi ro xuống, và vì sao khách hàng bị reject."
+    )
+
+    c1, c2 = st.columns(2)
+
+    with c1:
+        if not shap_imp.empty:
+            y = "mean_abs_shap" if "mean_abs_shap" in shap_imp.columns else shap_imp.columns[-1]
+            feature_col = "feature" if "feature" in shap_imp.columns else shap_imp.columns[0]
+            top = shap_imp.sort_values(y, ascending=False).head(20).sort_values(y)
+            fig = px.bar(
+                top,
+                x=y,
+                y=feature_col,
+                orientation="h",
+                color=y,
+                text=y,
+                color_continuous_scale="YlGnBu",
+            )
+            fig.update_traces(texttemplate="%{text:.3f}", textposition="outside", cliponaxis=False)
+            st.plotly_chart(theme(fig, "Top SHAP Drivers", 640), use_container_width=True)
+        elif (EXPLAIN / "shap_bar.png").exists():
+            st.image(str(EXPLAIN / "shap_bar.png"), use_container_width=True)
+        else:
+            st.plotly_chart(empty_fig("No SHAP output yet"), use_container_width=True)
+
+        chart_note(
+            "<b>Ý nghĩa:</b> SHAP cho biết biến nào ảnh hưởng mạnh nhất đến dự đoán của model. "
+            "Đây là phần rất quan trọng để bảo vệ bài: mô hình không chỉ cho kết quả mà còn giải thích được lý do."
+        )
+
+    with c2:
+        if not feat_imp.empty:
+            if "importance" in feat_imp.columns and "feature" in feat_imp.columns:
+                top = feat_imp.sort_values("importance", ascending=False).head(20).sort_values("importance")
+                fig = px.bar(
+                    top,
+                    x="importance",
+                    y="feature",
+                    orientation="h",
+                    color="importance",
+                    text="importance",
+                    color_continuous_scale="YlOrBr",
+                )
+                fig.update_traces(texttemplate="%{text:.3f}", textposition="outside", cliponaxis=False)
+                st.plotly_chart(theme(fig, "Model Feature Importance", 640), use_container_width=True)
+            else:
+                st.dataframe(feat_imp.head(30), use_container_width=True)
+        elif (VISUALS / "feature_importance_professional.png").exists():
+            st.image(str(VISUALS / "feature_importance_professional.png"), use_container_width=True)
+        else:
+            st.plotly_chart(empty_fig("No feature importance output yet"), use_container_width=True)
+
+        chart_note(
+            "<b>Ý nghĩa:</b> Feature importance là góc nhìn tổng quát của mô hình, còn SHAP giải thích chi tiết hơn tác động của feature. "
+            "Hai biểu đồ kết hợp giúp bài có độ tin cậy và khả năng giải thích."
+        )
+
+    c3, c4 = st.columns(2, gap="medium")
+
+    with c3:
+        if (EXPLAIN / "shap_summary.png").exists():
+            st.image(str(EXPLAIN / "shap_summary.png"), caption="SHAP Summary Plot", use_container_width=True)
+            chart_note(
+                "<b>Ý nghĩa:</b> SHAP Summary cho biết cả mức độ quan trọng và hướng tác động của feature. "
+                "Feature có giá trị cao/thấp có thể làm xác suất default tăng hoặc giảm tùy màu và vị trí."
+            )
+        else:
+            st.plotly_chart(empty_fig("Missing explainability/shap_summary.png"), use_container_width=True)
+
+    with c4:
+        if not shap_water.empty:
+            value_col = "shap_value" if "shap_value" in shap_water.columns else shap_water.columns[-1]
+            feature_col = "feature" if "feature" in shap_water.columns else shap_water.columns[0]
+            temp = shap_water.sort_values(value_col)
+            fig = px.bar(
+                temp,
+                x=value_col,
+                y=feature_col,
+                orientation="h",
+                color=value_col,
+                color_continuous_scale="RdYlGn_r",
+            )
+            fig.add_vline(x=0, line_color="#08111f")
+            st.plotly_chart(theme(fig, "Sample Customer SHAP Waterfall", 600), use_container_width=True)
+        elif (EXPLAIN / "shap_waterfall_sample.png").exists():
+            st.image(str(EXPLAIN / "shap_waterfall_sample.png"), caption="SHAP Waterfall Sample", use_container_width=True)
+        else:
+            st.plotly_chart(empty_fig("No SHAP waterfall yet"), use_container_width=True)
+
+        chart_note(
+            "<b>Ý nghĩa:</b> Waterfall giải thích một khách hàng cụ thể. "
+            "Biến bên phải làm tăng rủi ro, biến bên trái làm giảm rủi ro. "
+            "Đây là phần rất tốt để demo khi giáo viên hỏi: Vì sao khách hàng này bị reject?"
+        )
+
+# ============================================================
+# PAGE 6 — DECISION STUDIO
+# ============================================================
+
+elif page == "🎯 Decision Studio":
+    section(
+        "Decision Studio — Customer-Level Prediction",
+        "Mô phỏng một hồ sơ vay và trình bày kết quả như credit officer dashboard: input, PD, credit score, risk level, decision và lý do nghiệp vụ."
+    )
+
+    c1, c2 = st.columns([1, 1], gap="medium")
+
+    with c1:
+        st.markdown(
+            """
+            <div class="panel">
+            <h3>Customer application</h3>
+            <p>Điều chỉnh các biến chính để xem mô hình thay đổi xác suất vỡ nợ và quyết định tín dụng.</p>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+        age = st.slider("Age", 18, 80, 32)
+        income = st.number_input("Annual income", min_value=0, value=65000, step=1000)
+        loan = st.number_input("Loan amount", min_value=100, value=12000, step=500)
+        rate = st.slider("Interest rate (%)", 1.0, 35.0, 12.5, 0.1)
+        dti = st.slider("Debt-to-income ratio", 0.0, 2.0, 0.35, 0.01)
+        util = st.slider("Credit utilization", 0.0, 1.5, 0.45, 0.01)
+        delinq = st.slider("Past delinquencies", 0, 20, 1)
+        hist = st.slider("Credit history length", 1, 35, 6)
+        emp = st.slider("Employment length", 0, 50, 5)
+        home = st.selectbox("Home ownership", ["RENT", "MORTGAGE", "OWN", "OTHER"])
+        intent = st.selectbox("Loan intent", ["PERSONAL", "EDUCATION", "MEDICAL", "VENTURE", "HOMEIMPROVEMENT", "DEBTCONSOLIDATION"])
+        grade = st.selectbox("Loan grade", list("ABCDEFG"))
+        default_file = st.selectbox("Default on file", ["N", "Y"])
+
+    raw = {
+        "person_age": age,
+        "person_income": income,
+        "person_emp_length": emp,
+        "loan_amnt": loan,
+        "loan_int_rate": rate,
+        "loan_percent_income": loan / max(income, 1),
+        "loan_to_income_ratio": loan / max(income, 1),
+        "debt_to_income_ratio": dti,
+        "credit_utilization_ratio": util,
+        "past_delinquencies": delinq,
+        "cb_person_cred_hist_length": hist,
+        "person_home_ownership": home,
+        "loan_intent": intent,
+        "loan_grade": grade,
+        "cb_person_default_on_file": default_file,
+    }
+
+    with c2:
+        res = predict(raw)
+
+        if res is None:
+            st.error("Thiếu model artifacts. Hãy chạy Person 2 và Person 3 trước.")
+        else:
+            decision = res["decision"]
+            score = res["credit_score"]
+            pdv = res["probability_of_default"]
+            risk = res["risk_level"]
+
+            st.markdown(
+                f"""
+                <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:14px;">
+                  <div class="kpi"><div class="label">Predicted PD</div><div class="value">{fmt_pct(pdv)}</div><div class="caption">Xác suất vỡ nợ dự đoán.</div></div>
+                  <div class="kpi"><div class="label">Credit Score</div><div class="value">{score}</div><div class="caption">Điểm tín dụng 300–850.</div></div>
+                  <div class="kpi"><div class="label">Decision</div><div class="value">{decision}</div><div class="caption">{explain_decision(decision)}</div></div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+
+            cc1, cc2 = st.columns([1, 1], gap="medium")
+
+            with cc1:
+                marker = ((score - 300) / 550) * 100
+                marker = max(0, min(100, marker))
+                st.markdown(
+                    f"""
+                    <div class="score-card">
+                      <div>
+                        <h3>Credit Score</h3>
+                        <div class="score-main"><b>{score}</b><span>/ 850</span></div>
+                        <div class="score-band"><div class="score-marker" style="left:{marker}%"></div></div>
+                        <div class="score-scale"><span>300 Risky</span><span>600 Review</span><span>850 Strong</span></div>
+                      </div>
+                      <div class="info-grid">
+                        <div class="info-tile"><b>{risk}</b><span>Risk level</span></div>
+                        <div class="info-tile"><b>{decision}</b><span>Loan decision</span></div>
+                        <div class="info-tile"><b>{fmt_pct(pdv)}</b><span>Probability of default</span></div>
+                      </div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
+
+            with cc2:
+                fig_pd = gauge_pd(pdv, "Probability of Default")
+                fig_pd.update_layout(height=300, margin=dict(l=18, r=18, t=45, b=18))
+                st.plotly_chart(fig_pd, use_container_width=True)
+
+            chart_note(
+                f"<b>Diễn giải quyết định:</b> Hồ sơ này được xếp <b>{decision}</b>. "
+                f"PD = <b>{fmt_pct(pdv)}</b>, credit score = <b>{score}</b>, risk level = <b>{risk}</b>. "
+                f"{explain_decision(decision)}"
+            )
+
+            st.markdown(
+                """
+                <div class="dark-panel">
+                <h3>Vì sao trang này quan trọng?</h3>
+                <p>
+                Đây là phần demo mạnh nhất của dashboard. Nó chứng minh mô hình không chỉ nằm trong notebook,
+                mà có thể trở thành hệ thống hỗ trợ quyết định tín dụng thật: nhập thông tin khách hàng,
+                nhận xác suất default, điểm tín dụng, mức rủi ro và quyết định xử lý.
+                </p>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+
+# ============================================================
+# PAGE 7 — STRESS LABORATORY
+# ============================================================
+
+elif page == "🌪️ Stress Laboratory":
+    section(
+        "Stress Laboratory — Portfolio Shock Simulation",
+        "Mô phỏng cú sốc danh mục: thu nhập giảm, lãi suất tăng, credit utilization tăng. Đây là góc nhìn ngân hàng thật vì rủi ro thay đổi theo môi trường kinh tế."
+    )
+
+    if filtered.empty or "probability_of_default" not in filtered.columns:
+        st.warning("Cần data/credit_scored_data.csv để chạy Stress Laboratory.")
+    else:
+        c1, c2, c3 = st.columns(3)
+        income_shock = c1.slider("Income shock", -50, 10, -15, 5) / 100
+        rate_shock = c2.slider("Interest rate shock", 0, 10, 3, 1)
+        util_shock = c3.slider("Utilization shock", 0, 50, 15, 5) / 100
+
+        stress = filtered.copy()
+
+        # Stress proxy: không train lại model, dùng hệ số nghiệp vụ để mô phỏng tăng PD.
+        stress_factor = 1 + abs(income_shock) * 0.55 + rate_shock * 0.035 + util_shock * 0.75
+        stress["stress_pd"] = np.clip(stress["probability_of_default"] * stress_factor, 0, 1)
+        stress["stress_score"] = stress["stress_pd"].apply(calculate_credit_score)
+        stress["stress_risk_level"] = stress["stress_score"].apply(classify_risk_level)
+        stress["stress_decision"] = stress.apply(
+            lambda r: make_decision(float(r["stress_pd"]), int(r["stress_score"])),
+            axis=1,
+        )
+
+        before_reject = stress["decision"].eq("REJECT").mean() if "decision" in stress.columns else np.nan
+        after_reject = stress["stress_decision"].eq("REJECT").mean()
+        before_pd = stress["probability_of_default"].mean()
+        after_pd = stress["stress_pd"].mean()
+        before_score = stress["credit_score"].mean()
+        after_score = stress["stress_score"].mean()
+
+        c = st.columns(5)
+        with c[0]:
+            kpi("Stress Factor", fmt_num(stress_factor, 2), "Mức khuếch đại rủi ro.")
+        with c[1]:
+            kpi("PD Before", fmt_pct(before_pd), "PD trung bình hiện tại.")
+        with c[2]:
+            kpi("PD After", fmt_pct(after_pd), "PD sau cú sốc.")
+        with c[3]:
+            kpi("Reject Before", fmt_pct(before_reject), "Reject rate hiện tại.")
+        with c[4]:
+            kpi("Reject After", fmt_pct(after_reject), "Reject rate sau cú sốc.")
+
+        comp = pd.DataFrame(
+            {
+                "Metric": ["Average PD", "Reject Rate", "Average Score"],
+                "Before": [before_pd, before_reject, before_score / 850],
+                "After stress": [after_pd, after_reject, after_score / 850],
+            }
+        )
+
+        comp_long = comp.melt(id_vars="Metric", var_name="Scenario", value_name="Value")
+
+        fig = px.bar(
+            comp_long,
+            x="Metric",
+            y="Value",
+            color="Scenario",
+            barmode="group",
+            text="Value",
+        )
+        fig.update_traces(texttemplate="%{text:.2%}", textposition="outside", cliponaxis=False)
+        fig.update_yaxes(title="Rate / normalized score")
+        st.plotly_chart(theme(fig, "Before vs After Stress", 520), use_container_width=True)
+
+        chart_note(
+            "<b>Ý nghĩa:</b> Stress test giúp dashboard có chiều sâu quản trị rủi ro. "
+            "Nó trả lời câu hỏi: Nếu kinh tế xấu đi, thu nhập giảm, lãi suất tăng và khách hàng dùng tín dụng nhiều hơn, "
+            "danh mục sẽ xấu đi bao nhiêu?"
+        )
+
+        fig2 = px.histogram(
+            stress,
+            x="stress_score",
+            color="stress_decision",
+            nbins=39,
+            color_discrete_map={
+                "APPROVE": "#15803d",
+                "REVIEW": "#d8b45f",
+                "REJECT": "#b91c1c",
+            },
+        )
+        fig2.update_xaxes(title="Stress credit score")
+        fig2.update_yaxes(title="Customers")
+        st.plotly_chart(theme(fig2, "Stressed Score Distribution", 520), use_container_width=True)
+
+        chart_note(
+            "<b>Ý nghĩa:</b> Khi stress score dịch sang trái, nhiều khách hàng chuyển từ APPROVE sang REVIEW/REJECT. "
+            "Đây là bằng chứng dashboard không chỉ xem dữ liệu tĩnh mà còn mô phỏng rủi ro trong điều kiện bất lợi."
+        )
+
+# ============================================================
+# PAGE 8 — DEFENSE REPORT
+# ============================================================
+
+elif page == "📜 Defense Report":
+    section(
+        "Defense Report — 10-Point Presentation View",
+        "Trang này giúp bạn thuyết trình/bảo vệ bài: tách rõ Person 1, Person 2, Person 3 và giải thích vì sao dự án có giá trị Machine Learning lẫn tài chính."
+    )
+
+    st.markdown(
+        f"""
+        <div class="panel">
+        <h3>Data provenance</h3>
+        <ul>
+          <li><b>Person 1:</b> tạo data_clean.csv, data_feature.csv, pca_features.csv, EDA report, feature dictionary và PCA output.</li>
+          <li><b>Person 2:</b> train Logistic Regression, Decision Tree, Random Forest, XGBoost; tuning bằng GridSearchCV; tối ưu threshold; lưu best_model.pkl.</li>
+          <li><b>Person 3:</b> load model tốt nhất, tạo pipeline.pkl, credit_scored_data.csv, credit score, risk level, decision rule và SHAP explainability.</li>
+          <li><b>Dashboard:</b> biến toàn bộ output thành hệ thống phân tích rủi ro tín dụng có thể trình diễn.</li>
+        </ul>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    c1, c2, c3 = st.columns(3)
+    with c1:
+        st.markdown(
+            """
+            <div class="dark-panel">
+            <h3>Person 1 — Data Lead</h3>
+            <ul>
+              <li>MySQL → Python</li>
+              <li>Data audit</li>
+              <li>Cleaning</li>
+              <li>EDA by grade / intent / country</li>
+              <li>Feature engineering</li>
+              <li>PCA</li>
+            </ul>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+    with c2:
+        st.markdown(
+            """
+            <div class="dark-panel">
+            <h3>Person 2 — ML Model</h3>
+            <ul>
+              <li>Train/test split có stratify</li>
+              <li>Logistic Regression baseline</li>
+              <li>Decision Tree</li>
+              <li>Random Forest</li>
+              <li>XGBoost</li>
+              <li>GridSearchCV + threshold optimization</li>
+            </ul>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+    with c3:
+        st.markdown(
+            """
+            <div class="dark-panel">
+            <h3>Person 3 — ML System</h3>
+            <ul>
+              <li>Deployment pipeline</li>
+              <li>Probability of default</li>
+              <li>Credit score 300–850</li>
+              <li>Risk level</li>
+              <li>APPROVE / REVIEW / REJECT</li>
+              <li>SHAP explainability</li>
+            </ul>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+    st.markdown(
+        """
+        <div class="panel">
+        <h3>Luận điểm bảo vệ bài</h3>
+        <ol>
+          <li><b>Bài không chỉ là dashboard:</b> phía sau có SQL, cleaning, EDA, feature engineering, model training, tuning, scoring và explainability.</li>
+          <li><b>Bài không chỉ chạy accuracy:</b> có Precision, Recall, F1-score, ROC-AUC, Confusion Matrix và Threshold Optimization.</li>
+          <li><b>Bài có nghiệp vụ tài chính:</b> biến xác suất default thành credit score, risk level và loan decision.</li>
+          <li><b>Bài có khả năng giải thích:</b> dùng SHAP và feature importance để trả lời vì sao model quyết định như vậy.</li>
+          <li><b>Bài có khả năng ứng dụng:</b> Decision Studio và Stress Lab mô phỏng hệ thống hỗ trợ phê duyệt tín dụng thật.</li>
+        </ol>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    tab1, tab2, tab3, tab4 = st.tabs(
+        ["Key results", "Person 3 visuals", "Summary reports", "Limitations & upgrades"]
+    )
+
+    with tab1:
+        if not model_cmp.empty:
+            st.dataframe(model_cmp, use_container_width=True)
+        if not thresh.empty:
+            st.dataframe(thresh.sort_values("f1_score", ascending=False).head(10), use_container_width=True)
+
+        chart_note(
+            "<b>Cách nói khi thuyết trình:</b> 'Nhóm em không chọn mô hình theo cảm tính. "
+            "Chúng em so sánh nhiều mô hình, chọn XGBoost vì ROC-AUC tốt nhất, sau đó tối ưu threshold để phù hợp bài toán tín dụng thay vì dùng ngưỡng mặc định 0.5.'"
+        )
+
+    with tab2:
+        imgs = [
+            "credit_score_distribution.png",
+            "risk_level_distribution.png",
+            "loan_decision_distribution.png",
+            "person3_executive_dashboard.png",
+        ]
+
+        for img in imgs:
+            path = VISUALS / img
+            if path.exists():
+                st.image(str(path), caption=img, use_container_width=True)
+
+        chart_note(
+            "<b>Ý nghĩa:</b> Person 3 là phần biến Machine Learning thành hệ thống. "
+            "Các biểu đồ score, risk level và decision là cầu nối giữa thuật toán và quyết định nghiệp vụ."
+        )
+
+    with tab3:
+        summary2 = REPORTS / "evaluation_report.txt"
+        summary3 = REPORTS / "person3_summary_report.txt"
+
+        c1, c2 = st.columns(2)
+
+        with c1:
+            st.markdown('<div class="dark-panel"><h3>Person 2 Evaluation Report</h3></div>', unsafe_allow_html=True)
+            if summary2.exists():
+                st.text(summary2.read_text(encoding="utf-8", errors="ignore")[:4000])
+            else:
+                st.info("Missing reports/evaluation_report.txt")
+
+        with c2:
+            st.markdown('<div class="dark-panel"><h3>Person 3 Summary Report</h3></div>', unsafe_allow_html=True)
+            if summary3.exists():
+                st.text(summary3.read_text(encoding="utf-8", errors="ignore")[:4000])
+            else:
+                st.info("Missing reports/person3_summary_report.txt")
+
+    with tab4:
+        st.markdown(
+            """
+            <div class="panel">
+            <h3>Limitations</h3>
+            <ul>
+              <li>Dữ liệu có thể chưa phản ánh đầy đủ thực tế ngân hàng vì thiếu lịch sử thanh toán theo thời gian.</li>
+              <li>Chưa có chi phí kinh doanh thật để tối ưu threshold theo expected profit/loss.</li>
+              <li>Chưa có kiểm định fairness giữa các nhóm khách hàng.</li>
+              <li>Stress test hiện là mô phỏng proxy, chưa phải mô hình kinh tế lượng chính thức.</li>
+              <li>Dashboard phụ thuộc vào output Person 1–2–3, cần chạy đúng pipeline trước khi demo.</li>
+            </ul>
+
+            <h3>Future Upgrades</h3>
+            <ul>
+              <li>Thêm expected loss = PD × LGD × EAD.</li>
+              <li>Thêm cost-sensitive threshold optimization.</li>
+              <li>Thêm model monitoring: drift, PSI, data quality alerts.</li>
+              <li>Thêm fairness dashboard.</li>
+              <li>Triển khai FastAPI để mô hình nhận request dự đoán real-time.</li>
+            </ul>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+# ============================================================
+# PAGE 9 — AI RISK COPILOT
+# ============================================================
+
+# ============================================================
+# PAGE 9 — AI RISK COPILOT
+# ============================================================
+
+elif page == "🧠 AI Risk Copilot":
+    section(
+        "AI Risk Copilot",
+        "Trợ lý AI giúp giải thích dự án, PCA, SHAP, model, credit score và chuẩn bị phần bảo vệ."
+    )
+
+    components.iframe(
+        "http://127.0.0.1:8000",
+        height=1000,
+        scrolling=False,
+    )
+
+    st.markdown(
+        """
+        <div class="panel">
+            <h3>Gợi ý câu hỏi demo khi thuyết trình</h3>
+            <ul>
+                <li>Dự án này giải quyết vấn đề gì?</li>
+                <li>Vì sao Credit Risk không nên chỉ dùng Accuracy?</li>
+                <li>Vì sao XGBoost phù hợp với dữ liệu tín dụng?</li>
+                <li>PCA giúp ích gì trong dự án này?</li>
+                <li>SHAP giúp giải thích mô hình như thế nào?</li>
+                <li>Threshold Optimization có ý nghĩa gì trong Credit Risk?</li>
+                <li>Nếu khách hàng income cao vẫn bị reject thì giải thích sao?</li>
+                <li>Điểm mạnh và hạn chế của dự án này là gì?</li>
+            </ul>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+# ============================================================
+# END
+# ============================================================

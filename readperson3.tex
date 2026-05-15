@@ -1,0 +1,246 @@
+PERSON 3 — PIPELINE, SHAP EXPLAINABILITY, CREDIT SCORING & DECISION SYSTEM
+1. Giới thiệu
+
+Sau khi Person 2 hoàn thành quá trình huấn luyện và tối ưu hóa mô hình Machine Learning bằng XGBoost, Person 3 tiếp tục phát triển hệ thống theo hướng triển khai thực tế (deployment-oriented system).
+
+Mục tiêu chính của Person 3 không còn tập trung vào việc cải thiện độ chính xác của mô hình, mà tập trung vào việc xây dựng một hệ thống chấm điểm tín dụng thông minh hoàn chỉnh có khả năng:
+
+Dự đoán rủi ro vỡ nợ
+Tạo credit score
+Phân loại mức độ rủi ro
+Tự động đưa ra quyết định cho vay
+Giải thích kết quả dự đoán bằng Explainable AI
+Trực quan hóa dữ liệu phục vụ quản trị rủi ro
+
+Hệ thống được xây dựng theo hướng mô phỏng quy trình hoạt động thực tế của ngân hàng và công ty tài chính hiện đại.
+
+2. Kết nối với Person 2
+
+Person 3 sử dụng trực tiếp toàn bộ artifacts đã được huấn luyện từ Person 2.
+
+Các thành phần được load gồm:
+
+Best XGBoost Model
+Best Threshold
+Model Columns
+Pipeline Components
+
+Kết quả:
+
+Best model: XGBoost
+Best threshold: 0.71
+Number of model columns: 48
+
+Điều này đảm bảo toàn bộ hệ thống của Person 3 kế thừa trực tiếp mô hình tốt nhất đã được tối ưu hóa trước đó.
+
+3. Deployment Pipeline
+
+Person 3 xây dựng deployment pipeline hoàn chỉnh để phục vụ triển khai hệ thống thực tế.
+
+Pipeline được lưu tại:
+
+pipeline/pipeline.pkl
+
+Pipeline bao gồm:
+
+Data preprocessing
+Feature alignment
+Prediction logic
+Credit scoring
+Decision engine
+
+Ý nghĩa:
+
+Có thể tái sử dụng trong dashboard/web app
+Đảm bảo quy trình prediction đồng nhất
+Hỗ trợ triển khai mô hình ngoài môi trường thực nghiệm
+
+Đây là bước cực kỳ quan trọng vì trong thực tế, mô hình Machine Learning cần được đóng gói thành pipeline để triển khai sản phẩm.
+
+4. Dashboard Helper Files
+
+Hệ thống tạo các helper files để hỗ trợ dashboard và deployment:
+
+dashboard/credit_score_logic.py
+dashboard/decision_rule.py
+dashboard/predict_function.py
+
+Các file này đảm nhiệm:
+
+Tính credit score
+Phân loại risk level
+Đưa ra quyết định APPROVE / REVIEW / REJECT
+Dự đoán khách hàng mới
+
+Điều này giúp hệ thống dễ dàng tích hợp vào ứng dụng thực tế.
+
+5. Batch Credit Scoring
+
+Mô hình được áp dụng lên toàn bộ dữ liệu khách hàng.
+
+Thông tin dataset:
+
+Shape: (32581, 49)
+Default rate: 21.82%
+
+Kết quả scoring được lưu:
+
+data/credit_scored_data.csv
+
+Các trường mới được tạo:
+
+probability_of_default
+credit_score
+risk_level
+decision
+model_prediction
+
+Ý nghĩa:
+
+Hệ thống giờ đây có thể đánh giá rủi ro cho toàn bộ khách hàng thay vì chỉ dự đoán từng mẫu riêng lẻ.
+
+6. SHAP Explainability
+
+Person 3 triển khai Explainable AI bằng SHAP để giải thích mô hình XGBoost.
+
+Kết quả:
+
+SHAP data type check:
+float64    48
+
+Điều này chứng minh toàn bộ dữ liệu đầu vào đã được xử lý đúng định dạng numeric phục vụ explainability.
+
+Các file explainability được tạo:
+
+explainability/shap_summary.png
+explainability/shap_bar.png
+explainability/shap_waterfall_sample.png
+reports/shap_feature_importance.csv
+reports/shap_waterfall_sample_data.csv
+
+Ý nghĩa của SHAP:
+
+Giải thích tại sao khách hàng bị đánh giá rủi ro cao
+Tăng tính minh bạch cho AI
+Hỗ trợ Explainable AI trong lĩnh vực tài chính
+Giúp business users hiểu quyết định của mô hình
+
+Các biến ảnh hưởng mạnh nhất tới rủi ro tín dụng gồm:
+
+loan_int_rate
+person_income
+loan_to_income_ratio
+loan_percent_income
+person_home_ownership_RENT
+
+Điều này cho thấy:
+
+Lãi suất vay cao
+Thu nhập thấp
+Tỷ lệ nợ cao
+
+là các nguyên nhân chính làm tăng khả năng vỡ nợ.
+
+7. Visualization & Executive Dashboard
+
+Person 3 xây dựng hệ thống trực quan hóa dữ liệu phục vụ phân tích rủi ro.
+
+Các file được tạo:
+
+visuals/credit_score_distribution.png
+visuals/risk_level_distribution.png
+visuals/loan_decision_distribution.png
+visuals/person3_executive_dashboard.png
+
+Dashboard tổng hợp bao gồm:
+
+Credit Score Distribution
+Risk Level Distribution
+Loan Decision Distribution
+Probability of Default
+SHAP Top Features
+Business Information Summary
+
+Dashboard giúp:
+
+Theo dõi phân phối rủi ro khách hàng
+Hỗ trợ quản trị tín dụng
+Giúp nhà quản lý ra quyết định nhanh hơn
+Mô phỏng hệ thống Credit Risk thực tế trong ngân hàng
+8. Sample Prediction
+
+Hệ thống thực hiện dự đoán thử nghiệm cho một khách hàng.
+
+Kết quả:
+
+{
+  "probability_of_default": 0.9966,
+  "prediction": 1,
+  "credit_score": 302,
+  "risk_level": "HIGH",
+  "decision": "REJECT"
+}
+
+Phân tích:
+
+Xác suất vỡ nợ rất cao: 99.66%
+Credit score rất thấp: 302
+Hệ thống xếp khách hàng vào nhóm HIGH RISK
+Quyết định cuối cùng: REJECT
+
+Điều này cho thấy hệ thống có khả năng hoạt động end-to-end hoàn chỉnh.
+
+9. Ý nghĩa Business
+
+Hệ thống Credit Risk Decision System mang lại nhiều giá trị thực tế.
+
+9.1 Tự động hóa đánh giá tín dụng
+
+Hệ thống có thể đánh giá hàng chục nghìn khách hàng nhanh chóng và nhất quán.
+
+9.2 Explainable AI
+
+SHAP giúp mô hình minh bạch hơn, tăng độ tin cậy khi áp dụng AI trong tài chính.
+
+9.3 Credit Scoring
+
+Credit score giúp business users dễ dàng hiểu kết quả dự đoán thay vì chỉ nhìn probability.
+
+9.4 Decision Support
+
+Hệ thống APPROVE / REVIEW / REJECT hỗ trợ quy trình xét duyệt khoản vay thực tế.
+
+9.5 Khả năng triển khai thực tế
+
+Pipeline và helper files giúp dễ dàng triển khai thành:
+
+Dashboard
+Web Application
+API Service
+FinTech Platform
+10. Kết luận
+
+Person 3 đã hoàn thiện giai đoạn triển khai hệ thống Credit Risk theo hướng thực tế.
+
+Các thành phần chính đã hoàn thành:
+
+Deployment Pipeline
+Batch Credit Scoring
+Decision Engine
+SHAP Explainability
+Executive Dashboard
+Sample Prediction System
+Business Visualization
+
+Hệ thống cuối cùng không chỉ là một mô hình Machine Learning đơn thuần mà đã trở thành một nền tảng Credit Risk Analytics hoàn chỉnh.
+
+Dự án kết hợp thành công:
+
+Machine Learning
+Explainable AI
+Credit Scoring
+Risk Analytics
+Business Intelligence
+Decision Support System
+
+Đây là mô hình rất gần với cách các ngân hàng và công ty FinTech hiện đại triển khai hệ thống đánh giá rủi ro tín dụng trong thực tế.

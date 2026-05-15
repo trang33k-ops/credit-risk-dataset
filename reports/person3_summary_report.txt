@@ -1,0 +1,54 @@
+
+PERSON 3 — PIPELINE, SHAP, CREDIT SCORE, DECISION RULE
+
+1. Input Artifacts
+- best_model.pkl
+- best_model_name.pkl
+- model_columns.pkl
+- best_threshold.pkl
+- data_feature.csv
+
+2. Best Model
+- XGBoost
+
+3. Best Threshold
+- 0.71
+
+4. Deployment Pipeline
+- pipeline/pipeline.pkl
+
+5. Credit Score Logic
+Credit Score = 850 - Probability_of_Default * 550
+
+6. Risk Level Rule
+- LOW    : Credit Score >= 700
+- MEDIUM : 600 <= Credit Score < 700
+- HIGH   : Credit Score < 600
+
+7. Decision Rule
+- APPROVE : Probability of Default < 0.25 and Credit Score >= 720
+- REVIEW  : Probability of Default < 0.60 and Credit Score >= 500
+- REJECT  : Otherwise
+
+8. Output Files
+- data/credit_scored_data.csv
+- pipeline/pipeline.pkl
+- dashboard/credit_score_logic.py
+- dashboard/decision_rule.py
+- dashboard/predict_function.py
+- explainability/shap_summary.png
+- explainability/shap_bar.png
+- explainability/shap_waterfall_sample.png
+- reports/shap_feature_importance.csv
+- reports/shap_waterfall_sample_data.csv
+- visuals/credit_score_distribution.png
+- visuals/risk_level_distribution.png
+- visuals/loan_decision_distribution.png
+
+9. Business Meaning
+Person 3 converts the trained ML model into an explainable credit risk scoring system.
+This part transforms probability prediction into credit score, risk level, and loan decision support.
+
+10. Connection with Person 2
+Person 3 loads the best model, optimized threshold, and model columns from Person 2.
+Therefore, the deployment logic remains consistent with the training and evaluation stage.

@@ -1,0 +1,49 @@
+﻿feature,importance
+loan_to_income_ratio,0.13126741
+person_home_ownership_RENT,0.07710182
+loan_grade_C,0.07705768
+loan_int_rate,0.06454629
+loan_grade_D,0.054660615
+person_home_ownership_OWN,0.04725204
+loan_intent_VENTURE,0.04529119
+loan_intent_HOMEIMPROVEMENT,0.040480275
+person_income,0.039666176
+loan_intent_EDUCATION,0.02675819
+loan_intent_MEDICAL,0.024935497
+cb_person_default_on_file_Y,0.021397695
+loan_grade_E,0.021215715
+loan_intent_PERSONAL,0.020221964
+loan_grade_G,0.019971794
+loan_grade_B,0.019564977
+person_emp_length,0.015338946
+loan_grade_F,0.01437243
+person_home_ownership_OTHER,0.013682994
+loan_percent_income,0.013114096
+person_age,0.012087021
+education_level_PhD,0.0101146875
+other_debt,0.010108999
+risk_index,0.010044029
+loan_amnt,0.009979087
+employment_type_Unemployed,0.009240439
+credit_utilization_ratio,0.009147124
+debt_to_income_ratio,0.009135544
+past_delinquencies,0.0091013955
+cb_person_cred_hist_length,0.009066084
+risk_behavior,0.00895467
+city_latitude,0.008804495
+marital_status_Married,0.008778397
+education_level_Master,0.008681339
+education_level_High School,0.008462517
+marital_status_Single,0.008387525
+marital_status_Widowed,0.008362636
+city_longitude,0.008323023
+open_accounts,0.008266891
+employment_type_Part-time,0.008224696
+loan_term_months,0.00791461
+gender_Male,0.00771926
+employment_type_Self-employed,0.0074314186
+risk_level_Medium Risk,0.005766244
+country_UK,0.0
+country_USA,0.0
+risk_level_Low Risk,0.0
+risk_level_Very High Risk,0.0

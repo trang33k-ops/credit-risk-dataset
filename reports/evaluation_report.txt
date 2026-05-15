@@ -1,0 +1,36 @@
+
+PERSON 2 — MODEL EVALUATION REPORT
+
+1. Best Model
+XGBoost with GridSearchCV
+
+2. Best Parameters
+{'colsample_bytree': 1.0, 'learning_rate': 0.05, 'max_depth': 6, 'n_estimators': 300, 'subsample': 0.8}
+
+3. Optimized Threshold
+0.71
+
+4. Final Metrics
+Accuracy: 0.9334
+Precision: 0.9714
+Recall: 0.7159
+F1-score: 0.8243
+ROC-AUC: 0.9450
+
+5. Classification Report
+              precision    recall  f1-score   support
+
+           0       0.93      0.99      0.96      5095
+           1       0.97      0.72      0.82      1422
+
+    accuracy                           0.93      6517
+   macro avg       0.95      0.86      0.89      6517
+weighted avg       0.94      0.93      0.93      6517
+
+
+6. Business Interpretation
+In Credit Risk, Recall is extremely important because missing a default customer may create financial loss.
+Accuracy alone is not enough because the dataset may be imbalanced.
+ROC-AUC measures the model's ability to distinguish between default and non-default customers.
+Threshold optimization is used because the default 0.5 threshold may not be suitable for banking risk control.
+XGBoost is included as an advanced boosting model commonly used for tabular financial data.

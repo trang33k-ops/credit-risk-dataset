@@ -1,0 +1,7 @@
+{
+    "probability_of_default": 0.9966,
+    "prediction": 1,
+    "credit_score": 302,
+    "risk_level": "HIGH",
+    "decision": "REJECT"
+}

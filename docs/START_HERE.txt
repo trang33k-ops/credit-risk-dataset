@@ -1,0 +1,11 @@
+BẮT ĐẦU NHANH
+
+1) Đặt toàn bộ thư mục này vào project chính.
+2) Chạy lần lượt nếu chưa có output:
+   python source_persons/person1_data_lead.py
+   python source_persons/person2_ml_model.py
+   python source_persons/person3_ml_system.py
+3) Chạy dashboard:
+   python -m streamlit run app.py
+
+Nếu đã có sẵn data/models/reports/visuals/explainability/pipeline ở project chính, chỉ cần chạy app.py.

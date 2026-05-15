@@ -1,0 +1,2 @@
+﻿best_model,best_threshold,accuracy,precision,recall,f1_score,roc_auc,train_rows,test_rows,total_features,xgboost_available
+XGBoost,0.71,0.9334,0.9714,0.7159,0.8243,0.945,26064,6517,48,True
